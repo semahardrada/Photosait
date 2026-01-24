@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Фотостудия{% endblock %}</title>
+    <!-- Подключаем Tailwind CSS (через CDN для простоты) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключаем FontAwesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen text-gray-800 font-sans">
+
+    <!-- === HEADER / НАВИГАЦИЯ === -->
+    <nav class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                
+                <!-- Логотип / Название (ссылка на главную) -->
+                <div class="flex items-center">
+                    <!-- ИСПРАВЛЕНИЕ: Ссылка ведет на 'gallery:landing' вместо старых ссылок -->
+                    <a href="{% url 'gallery:landing' %}" class="flex-shrink-0 flex items-center text-blue-600 font-bold text-xl tracking-wide">
+                        <i class="fas fa-camera-retro mr-2"></i>
+                        PHOTO-STUDIO
+                    </a>
+                </div>
+
+                <!-- Меню справа -->
+                <div class="flex items-center space-x-4">
+                    
+                    <!-- Ссылка на корзину (показываем всегда) -->
+                    <a href="{% url 'orders:cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors p-2">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        {% if request.session.cart.photo_ids or request.session.cart.buy_full_set %}
+                            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">!</span>
+                        {% endif %}
+                    </a>
+
+                    <!-- Ссылка для Админа (если залогинен) -->
+                    {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}" class="text-sm font-medium text-gray-500 hover:text-gray-900 ml-4 border border-gray-300 rounded px-3 py-1">
+                            <i class="fas fa-cog mr-1"></i> Админка
+                        </a>
+                        <a href="{% url 'gallery:album_list' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-2">
+                            <i class="fas fa-list mr-1"></i> Все папки
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- === ОСНОВНОЙ КОНТЕНТ === -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- Блок сообщений (ошибки, успех) -->
+        {% if messages %}
+            <div class="max-w-4xl mx-auto mb-6">
+                {% for message in messages %}
+                    <div class="p-4 rounded-lg shadow-sm mb-2 text-center 
+                        {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200
+                        {% elif message.tags == 'success' %}bg-green-100 text-green-700 border border-green-200
+                        {% else %}bg-blue-100 text-blue-700 border border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- === FOOTER === -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-400">
+                &copy; {% now "Y" %} Фотостудия. Все права защищены.
+            </p>
+        </div>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

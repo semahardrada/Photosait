@@ -1,0 +1,5 @@
+/* Стиль для рамки вокруг выбранной фотографии */
+.photo-card.selected {
+    outline: 4px solid #3b82f6; /* Синяя рамка, как у Tailwind's blue-600 */
+    outline-offset: -4px;
+}

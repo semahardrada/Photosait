@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Фотостудия - Вход в галерею{% endblock %}
+
+{% block content %}
+<div class="min-h-[80vh] flex flex-col justify-center items-center bg-gray-50">
+    
+    <!-- Центральная карточка -->
+    <div class="bg-white p-8 md:p-12 rounded-2xl shadow-xl max-w-lg w-full text-center border border-gray-100">
+        
+        <!-- Логотип или Иконка -->
+        <div class="mb-8">
+            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto shadow-lg text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Добро пожаловать</h1>
+        <p class="text-gray-500 mb-8">
+            Введите код доступа или перейдите по персональной ссылке, которую вам отправил фотограф.
+        </p>
+
+        <!-- Форма ввода кода -->
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="p-3 rounded-lg text-sm mb-4 {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="relative">
+                <input type="text" name="access_code" placeholder="Код доступа (из ссылки)" 
+                       class="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-center text-lg font-mono tracking-wider"
+                       required>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:-translate-y-0.5">
+                Перейти к фотографиям &rarr;
+            </button>
+        </form>
+
+        <div class="mt-8 pt-8 border-t border-gray-100 text-sm text-gray-400">
+            <p>Нет кода доступа?</p>
+            <p class="mt-1">Свяжитесь с администратором вашей группы.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

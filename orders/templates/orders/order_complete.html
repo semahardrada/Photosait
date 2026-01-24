@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ №{{ order.id }} принят!{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg text-center">
+    <div class="text-green-500 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-24 w-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </div>
+    <h1 class="text-3xl font-bold text-gray-800 mb-4">Спасибо за ваш заказ!</h1>
+    <p class="text-gray-600">
+        Ваш заказ №{{ order.id }} успешно принят в обработку. Мы начнем работу над ним, как только наш оператор проверит поступление оплаты.
+    </p>
+    
+    
+    <p class="text-gray-600 mt-4 mb-8">
+        По всем вопросам, связанным с заказом, пожалуйста, обращайтесь к <strong class="text-gray-800">Семёну</strong> по телефону <strong class="text-gray-800">+7 (999) 123-45-67</strong>.
+    </p>
+    
+
+    <a href="/" class="text-blue-600 hover:underline">Вернуться на главную</a>
+</div>
+{% endblock %}

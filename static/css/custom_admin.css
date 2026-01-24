@@ -1,0 +1,36 @@
+/* static/css/custom_admin.css */
+
+/* Делаем превью фото чуть красивее */
+td img {
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+td img:hover {
+    transform: scale(1.5);
+    z-index: 100;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* Выделяем важные статусы цветом */
+td.field-status {
+    font-weight: 600;
+}
+
+/* Делаем кнопку "Сохранить" более заметной */
+.submit-row input.default {
+    background-color: #28a745 !important;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* Улучшаем читаемость заголовков в формах */
+.module h2, .module caption, .inline-group h2 {
+    background-color: #f8f9fa;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding: 10px 15px;
+}

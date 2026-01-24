@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Наша продукция{% endblock %}
+
+{% block content %}
+<!-- === ИЗМЕНЕНИЕ: Убрал 'mt-8' (он есть в main), 'shadow-xl' заменен на 'shadow-lg' === -->
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-4xl font-bold text-gray-800 mb-6 border-b pb-4">Наша продукция</h1>
+    
+    <!-- 'prose' - отличный класс, оставляем его -->
+    <div class="prose lg:prose-xl max-w-none space-y-10 text-gray-700">
+        
+        <!-- === ИЗМЕНЕНИЕ: 'text-indigo-600' заменен на 'text-sky-600' === -->
+        <div class="pb-4 border-b">
+            <h2 class="text-2xl font-bold text-sky-600 mb-2">Фотомагниты</h2>
+            <p class="text-base leading-relaxed">
+                Превратите ваши любимые моменты в яркие магниты на холодильник! Мы используем качественную печать и прочную основу, чтобы ваши воспоминания радовали вас каждый день. Идеальный небольшой подарок для бабушек и дедушек.
+            </p>
+        </div>
+        
+        <div class="pb-4 border-b">
+            <h2 class="text-2xl font-bold text-sky-600 mb-2">Фотокалендари</h2>
+            <p class="text-base leading-relaxed">
+                Целый год с вашими лучшими фотографиями. Выберите 12 снимков, и мы создадим для вас персональный настенный или настольный календарь. Отличное качество бумаги и печати.
+            </p>
+        </div>
+        
+        <div>
+            <h2 class="text-2xl font-bold text-sky-600 mb-2">Фотоколлажи</h2>
+            <p class="text-base leading-relaxed">
+                Соберите несколько фотографий в единую композицию. Мы поможем вам создать стильный коллаж, который станет настоящим украшением интерьера. Вы можете выбрать размер, компоновку и стиль оформления.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

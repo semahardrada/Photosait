@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Оформление заказа{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Оформление заказа</h1>
+
+    <div class="mb-6 border-b pb-6">
+        <h2 class="text-xl font-semibold mb-4">Состав заказа:</h2>
+        <div class="flex justify-between items-center text-lg">
+            <span>{{ product_format.name }} (x{{ photo_count }})</span>
+            <span class="font-bold">{{ total_price }} руб.</span>
+        </div>
+    </div>
+
+    <form action="{% url 'orders:submit_order' %}" method="post">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="first_name" class="block text-sm font-medium text-gray-700">Имя</label>
+                <input type="text" name="first_name" id="first_name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div>
+                <label for="last_name" class="block text-sm font-medium text-gray-700">Фамилия</label>
+                <input type="text" name="last_name" id="last_name" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="md:col-span-2">
+                <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" name="email" id="email" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            <div class="md:col-span-2">
+                <label for="phone" class="block text-sm font-medium text-gray-700">Телефон</label>
+                <input type="tel" name="phone" id="phone" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            </div>
+        </div>
+
+        <div class="mt-8 text-right">
+            <button type="submit" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors">
+                Перейти к оплате
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

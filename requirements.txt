@@ -1,0 +1,12 @@
+asgiref==3.11.0
+colorama==0.4.6
+Django==6.0
+django-jazzmin==3.0.1
+et_xmlfile==2.0.0
+gunicorn==24.0.0
+openpyxl==3.1.5
+packaging==26.0
+pillow==12.0.0
+qrcode==8.2
+sqlparse==0.5.5
+tzdata==2025.3

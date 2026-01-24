@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Доступ закрыт{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-md text-center">
+    <h1 class="text-3xl font-bold text-red-600 mb-4">Доступ к альбому "{{ album.title }}" закрыт</h1>
+    
+    <!-- === Н === -->
+    <p class="text-gray-700 text-lg">
+        Срок выбора фотографий для этого альбома истек {{ album.expires_at|date:"d.m.Y в H:i" }}.
+    </p>
+    <p class="text-gray-700 text-lg mt-4">
+        <!-- 
+          Используем новую переменную 'expired_message' из views.py.
+          Фильтр |safe нужен, чтобы ссылка отображалась как HTML, а не как текст.
+        -->
+        {{ expired_message|safe }}
+    </p>
+    <!-- === К === -->
+
+</div>
+{% endblock %}

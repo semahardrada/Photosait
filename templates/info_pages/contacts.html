@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<!-- === ИЗМЕНЕНИЕ: Убрал 'mt-8', 'shadow-xl' заменен на 'shadow-lg' === -->
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h1 class="text-4xl font-bold text-gray-800 mb-6 border-b pb-4">Контакты</h1>
+    
+    <div class="prose lg:prose-xl max-w-none space-y-4 text-gray-700">
+        <p>
+            Если у вас возникли вопросы по вашему заказу, вы хотите уточнить детали или просто сказать "привет", вы можете связаться с нами любым удобным способом.
+        </p>
+        
+        <!-- === ИЗМЕНЕНИЕ: Добавил иконки для наглядности === -->
+        <p class="text-lg flex items-center">
+            <svg class="h-5 w-5 mr-3 text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2.153a1 1 0 01-.986-.836l-.74-4.435a1 1 0 01.54-1.06l1.548-.773a11.037 11.037 0 00-6.105-6.105l-.774 1.548a1 1 0 01-1.06.54l-4.435-.74A1 1 0 012 3z" /></svg>
+            <strong>Телефон:</strong>
+            <a href="tel:+79991234567" class="ml-2 text-sky-600 hover:underline">+7 (999) 123-45-67</a>
+        </p>
+        <p class="text-lg flex items-center">
+            <svg class="h-5 w-5 mr-3 text-sky-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.161V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>
+            <strong>Email:</strong>
+            <a href="mailto:photo@example.com" class="ml-2 text-sky-600 hover:underline">photo@example.com</a>
+        </p>
+        <p class="text-lg flex items-center">
+            <svg class="h-5 w-5 mr-3 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 01-.923 1.785A5.969 5.969 0 006 21c1.282 0 2.47-.402 3.445-1.087.81.22 1.668.337 2.555.337z" /></svg>
+            <strong>Telegram:</strong>
+            <span class="ml-2">@photographer_contact</span>
+        </p>
+    </div>
+</div>
+{% endblock %}
