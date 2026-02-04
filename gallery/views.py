@@ -12,6 +12,11 @@ def landing_page(request):
             try:
                 album = Album.objects.filter(access_token=access_code).first()
                 if album:
+                    # ВАЖНО: Если пользователь вводит новый код, мы ОБЯЗАНЫ очистить старую корзину,
+                    # чтобы не смешивать заказы разных детей.
+                    if 'cart' in request.session:
+                        del request.session['cart']
+                    
                     return redirect('gallery:album_detail', access_token=album.access_token)
                 else:
                     messages.error(request, "Альбом с таким кодом не найден.")
@@ -36,7 +41,7 @@ def album_list(request):
     })
 
 
-# === 3. ПРОСМОТР АЛЬБОМА (ИСПРАВЛЕННАЯ ЛОГИКА) ===
+# === 3. ПРОСМОТР АЛЬБОМА (С ЖЕСТКИМ ОБНОВЛЕНИЕМ КОРЗИНЫ) ===
 def album_detail(request, access_token):
     """
     Страница папки или альбома.
@@ -52,7 +57,7 @@ def album_detail(request, access_token):
 
     # === ЛОГИКА №1: ЕСЛИ ЭТО ПАПКА ===
     if album.is_grouping:
-        # Показываем список вложенных альбомов (как меню)
+        # Если зашли в папку - корзину пока не трогаем, пусть гуляет
         sub_albums = album.sub_albums.all().order_by('title')
         context = {
             'album': album,
@@ -65,19 +70,29 @@ def album_detail(request, access_token):
     
     # === ЛОГИКА №2: ЕСЛИ ЭТО АЛЬБОМ С ФОТО ===
     else:
-        # ИСПРАВЛЕНИЕ ЗДЕСЬ:
-        # 1. Получаем список ID всех фотографий в этом альбоме
-        # values_list возвращает список чисел [1, 2, 5, 8...]
-        all_photo_ids = list(album.photos.values_list('id', flat=True))
+        # Получаем текущую корзину
+        cart = request.session.get('cart', {})
+        current_cart_album_id = cart.get('album_id')
+
+        # ИСПРАВЛЕНИЕ:
+        # Если в корзине лежит ДРУГОЙ альбом (или корзины нет), 
+        # мы ПОЛНОСТЬЮ перезаписываем её текущими фотками.
+        # Это решает проблему "смешивания" фото и "пустой корзины".
+        if current_cart_album_id != album.id:
+            
+            # Собираем ID всех фото
+            all_photo_ids = list(album.photos.values_list('id', flat=True))
+            
+            # Создаем новую чистую сессию для этого альбома
+            request.session['cart'] = {
+                'album_id': album.id,
+                'buy_full_set': False, 
+                'photo_ids': all_photo_ids, # Кладем фото сразу
+                'item_quantities': {}       # Количества 0
+            }
+            request.session.modified = True
         
-        # 2. Формируем корзину, добавляя туда ВСЕ эти ID
-        request.session['cart'] = {
-            'album_id': album.id,
-            'buy_full_set': False,  # Ставим False, чтобы отобразился список фото, а не блок "купить все"
-            'photo_ids': all_photo_ids, # Загружаем все фото в корзину
-            'item_quantities': {}   # Количества пока по нулям, клиент сам выберет
-        }
-        request.session.modified = True
-        
-        # 3. Редирект в корзину, где теперь отобразятся все фото
+        # Если ID совпадают, значит пользователь просто обновил страницу 
+        # или вернулся назад - ничего не сбрасываем, чтобы не потерять его выбор.
+
         return redirect('orders:cart')

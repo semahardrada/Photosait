@@ -8,169 +8,236 @@
 {% if album %}
 <div id="oferta-backdrop" class="hidden fixed inset-0 z-40 bg-black bg-opacity-75"></div>
 <div id="oferta-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-        <div class="p-6 md:p-8 overflow-y-auto" style="max-height: 70vh;">
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Публичная оферта группы</h3>
-            <p class="text-gray-700 mb-4 text-sm">...</p>
-            <h4 class="font-bold text-lg mb-2">1. Термины и определения</h4>
-            <p class="text-gray-600 text-sm mb-4">1.1. Оферта – ...</p>
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+        <div class="p-6 md:p-8 overflow-y-auto">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Публичная оферта</h3>
+            <p class="text-gray-700 mb-4 text-sm">Пожалуйста, ознакомьтесь с условиями перед покупкой.</p>
+            <div class="text-sm text-gray-600 space-y-2">
+                <p>1. Приобретая фотографии, вы получаете цифровые копии высокого качества.</p>
+                <p>2. Фотографии предоставляются для личного использования.</p>
+                <p>3. Возврат цифровых товаров надлежащего качества не производится.</p>
+                <p>...</p>
+            </div>
         </div>
-        <div class="p-6 border-t bg-gray-50 rounded-b-lg">
+        <div class="p-6 border-t bg-gray-50 rounded-b-lg mt-auto">
             <div class="flex items-center mb-4">
-                <input id="oferta-checkbox" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                <label for="oferta-checkbox" class="ml-2 block text-sm text-gray-900">
-                    Я прочитал(а) и принимаю условия <a href="#" target="_blank" class="text-blue-600 hover:underline">Публичной оферты</a>.
+                <input id="oferta-checkbox" type="checkbox" class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                <label for="oferta-checkbox" class="ml-3 block text-sm text-gray-900 cursor-pointer select-none">
+                    Я прочитал(а) и принимаю условия <a href="#" class="text-blue-600 hover:underline">Публичной оферты</a>.
                 </label>
             </div>
             <button id="oferta-accept-btn" type="button" class="w-full bg-blue-600 text-white font-bold py-3 px-12 rounded-lg transition-colors opacity-50 cursor-not-allowed" disabled>
-                принимаю
+                ПРИНИМАЮ И ПРОДОЛЖИТЬ
             </button>
         </div>
     </div>
 </div>
 {% endif %}
-<!-- === МОДАЛЬНОЕ ОКНО ОФЕРТЫ === -->
 
+<!-- === НОВОЕ: LIGHTBOX (ПРОСМОТР ФОТО) === -->
+<div id="lightbox-modal" class="hidden fixed inset-0 z-[60] bg-black bg-opacity-90 flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeLightbox()">
+    <div class="relative max-w-full max-h-full">
+        <!-- Кнопка закрытия -->
+        <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-4xl hover:text-gray-300 focus:outline-none">&times;</button>
+        
+        <!-- Картинка -->
+        <img id="lightbox-image" src="" alt="Full view" class="max-h-[90vh] max-w-[95vw] object-contain rounded shadow-2xl" onclick="event.stopPropagation()">
+    </div>
+</div>
 
 <!-- === ОСНОВНОЙ КОНТЕНТ КОРЗИНЫ === -->
-<div class="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-lg" 
+<div class="max-w-5xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow-lg" 
      id="cart-page-container" 
      data-bonus-threshold="{{ bonus_threshold|default:0 }}"
      {% if album %}data-album-id="{{ album.id }}"{% endif %}>
      
-    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-8 border-b pb-4">Ваша корзина</h1>
+    <div class="flex justify-between items-center mb-8 border-b pb-4">
+        <h1 class="text-2xl md:text-4xl font-bold text-gray-800">Ваша корзина</h1>
+        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base">
+            &larr; Вернуться к альбому
+        </a>
+    </div>
 
     {% if album and album.full_set_price and not cart.buy_full_set %}
-    <div class="mb-6">
+    <div class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-100 shadow-sm text-center">
+        <h3 class="text-lg font-semibold text-blue-900 mb-2">Выгодное предложение!</h3>
+        <p class="text-blue-700 mb-4">Купите все фотографии из этого альбома разом со скидкой.</p>
         <form action="{% url 'orders:add_full_set' album.id %}" method="POST">
             {% csrf_token %}
-            <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors">
-                Купить все фото Online ({{ album.full_set_price|floatformat:2 }} руб.)
+            <button type="submit" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors shadow-md transform hover:-translate-y-0.5">
+                Купить все фото Online ({{ album.full_set_price|floatformat:0 }} руб.)
             </button>
         </form>
     </div>
     {% endif %}
 
-    <div id="cart-items-container" class="space-y-6">
+    <div id="cart-items-container" class="space-y-8">
         
         {% for item in photos_with_formats %}
             {% if item.is_full_set %}
             <!-- Блок "Всего комплекта" -->
-            <div class="cart-item-block mb-8 p-4 bg-gray-50 rounded-lg" 
+            <div class="cart-item-block mb-8 p-6 bg-green-50 border border-green-200 rounded-lg flex flex-col md:flex-row items-center" 
                  data-is-full-set="true" 
                  data-price="{{ item.full_set_price|stringformat:'.2f' }}">
-                 <p class="font-bold text-xl">{{ item.photo_obj.name }}</p>
-                 <p>Цена: {{ item.full_set_price }} руб.</p>
+                 
+                 <div class="w-full md:w-1/4 mb-4 md:mb-0 md:mr-6 flex justify-center">
+                    {% if item.photo_obj.image_url %}
+                        <!-- Добавил onclick для просмотра полного комплекта тоже -->
+                        <img src="{{ item.photo_obj.image_url }}" 
+                             loading="lazy" 
+                             onclick="openLightbox('{{ item.photo_obj.image_url }}')"
+                             class="h-32 w-auto object-contain rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
+                    {% else %}
+                        <div class="h-32 w-32 bg-gray-200 rounded flex items-center justify-center text-gray-400">Нет фото</div>
+                    {% endif %}
+                 </div>
+
+                 <div class="text-center md:text-left">
+                     <p class="font-bold text-xl text-green-900">{{ item.photo_obj.name }}</p>
+                     <p class="text-green-700 mt-1">Полный доступ ко всем фотографиям в оригинальном качестве.</p>
+                     <p class="font-bold text-2xl mt-2 text-gray-800">{{ item.full_set_price|floatformat:0 }} руб.</p>
+                 </div>
             </div>
 
             {% else %}
             <!-- Блок обычной фотографии -->
-            <div class="cart-item-block mb-8 p-4 bg-gray-50 rounded-lg" data-photo-id="{{ item.photo_obj.id }}">
-                <div class="flex items-center mb-4">
-                    {% if item.photo_obj.processed_image %}
-                        <img src="{{ item.photo_obj.processed_image.url }}" alt="Фото {{ item.photo_obj.id }}" class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md mr-4">
-                    {% else %}
-                        <img src="{{ item.photo_obj.image.url }}" alt="Фото {{ item.photo_obj.id }}" class="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-md mr-4 opacity-50">
-                    {% endif %}
-                    <p class="font-semibold text-gray-800">Фотография #{{ item.photo_obj.id }}</p>
-                </div>
-        
-                <!-- Список форматов -->
-                <div class="space-y-3 pl-0 sm:pl-24 md:pl-36">
-                    {% for f_item in item.formats %}
-                    <div class="format-row grid grid-cols-6 gap-2 sm:gap-4 items-center" 
-                         data-format-id="{{ f_item.format_obj.id }}"
-                         data-price="{{ f_item.price|stringformat:'.2f' }}"
-                         data-is-collage="{{ f_item.format_obj.is_collage|yesno:'true,false' }}">
-                        
-                        <div class="col-span-6 sm:col-span-2">
-                            <span class="font-medium text-gray-800">
-                                {{ f_item.format_obj.name }}
-                                {% if f_item.format_obj.is_collage %}
-                                    <span class="text-xs text-blue-500 block">(Одна цена на весь заказ)</span>
-                                {% endif %}
-                            </span>
+            <div class="cart-item-block mb-8 pb-8 border-b border-gray-100 last:border-0" data-photo-id="{{ item.photo_obj.id }}">
+                <div class="flex flex-col md:flex-row gap-6">
+                    
+                    <!-- БЛОК С ФОТО (С КЛИКОМ) -->
+                    <div class="w-full md:w-1/3 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100" style="min-height: 250px;">
+                        {% if item.photo_obj.processed_image %}
+                            <div class="relative group cursor-pointer" onclick="openLightbox('{{ item.photo_obj.processed_image.url }}')">
+                                <img src="{{ item.photo_obj.processed_image.url }}" 
+                                     alt="Фото {{ item.photo_obj.id }}" 
+                                     loading="lazy"
+                                     class="max-h-64 w-auto max-w-full object-contain shadow-sm rounded group-hover:opacity-90 transition-opacity">
+                                <!-- Иконка лупы при наведении -->
+                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div class="bg-black bg-opacity-50 text-white p-2 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <img src="{{ item.photo_obj.image.url }}" 
+                                 alt="Фото {{ item.photo_obj.id }}" 
+                                 loading="lazy"
+                                 class="max-h-64 w-auto max-w-full object-contain opacity-50 grayscale">
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Правая часть -->
+                    <div class="w-full md:w-2/3">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-lg text-gray-800">Фотография #{{ item.photo_obj.id }}</h3>
                         </div>
-                        <div class="col-span-2 sm:col-span-1">
-                             <span class="text-sm text-gray-600">{{ f_item.price|floatformat:2 }} руб.</span>
-                        </div>
-                        
-                        <div class="col-span-2 sm:col-span-2 flex items-center justify-center">
-                            {% if f_item.format_obj.is_collage %}
-                                <input type="hidden" value="{{ f_item.quantity }}" class="quantity-input">
+                
+                        <!-- Список форматов -->
+                        <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
+                            {% for f_item in item.formats %}
+                            <div class="format-row grid grid-cols-12 gap-2 items-center" 
+                                 data-format-id="{{ f_item.format_obj.id }}"
+                                 data-price="{{ f_item.price|stringformat:'.2f' }}"
+                                 data-is-collage="{{ f_item.format_obj.is_collage|yesno:'true,false' }}">
                                 
-                                <button type="button" 
-                                        class="collage-toggle-btn w-full py-2 px-3 rounded text-sm font-bold transition-colors
-                                        {% if f_item.quantity > 0 %}
-                                            bg-blue-600 text-white hover:bg-blue-700
-                                        {% else %}
-                                            bg-gray-200 text-gray-700 hover:bg-gray-300
-                                        {% endif %}">
-                                    {% if f_item.quantity > 0 %}
-                                        ✓ В коллаже
-                                    {% else %}
-                                        Добавить в коллаж
+                                <!-- Название и цена -->
+                                <div class="col-span-6 sm:col-span-5">
+                                    <span class="font-medium text-gray-700 block text-sm sm:text-base">{{ f_item.format_obj.name }}</span>
+                                    <span class="text-xs text-gray-500">{{ f_item.price|floatformat:0 }} руб.</span>
+                                    {% if f_item.format_obj.is_collage %}
+                                        <span class="text-xs text-blue-500 block leading-tight mt-0.5">(Оплата 1 раз за заказ)</span>
                                     {% endif %}
-                                </button>
+                                </div>
+                                
+                                <!-- Кнопки управления -->
+                                <div class="col-span-6 sm:col-span-4 flex justify-end sm:justify-center">
+                                    {% if f_item.format_obj.is_collage %}
+                                        <input type="hidden" value="{{ f_item.quantity }}" class="quantity-input">
+                                        <button type="button" 
+                                                class="collage-toggle-btn w-full py-1.5 px-2 rounded text-xs sm:text-sm font-bold transition-colors text-center border
+                                                {% if f_item.quantity > 0 %}
+                                                    bg-blue-600 text-white border-blue-600 hover:bg-blue-700
+                                                {% else %}
+                                                    bg-white text-gray-700 border-gray-300 hover:bg-gray-100
+                                                {% endif %}">
+                                            {% if f_item.quantity > 0 %}В коллаже{% else %}Добавить{% endif %}
+                                        </button>
+                                    {% else %}
+                                        <div class="flex items-center bg-white border border-gray-300 rounded-md">
+                                            <button type="button" class="quantity-btn quantity-decrease w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-l-md transition">-</button>
+                                            <input type="number" value="{{ f_item.quantity }}" min="0" class="quantity-input w-10 text-center border-0 p-0 text-sm focus:ring-0 text-gray-800" readonly>
+                                            <button type="button" class="quantity-btn quantity-increase w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-r-md transition">+</button>
+                                        </div>
+                                    {% endif %}
+                                </div>
 
-                            {% else %}
-                                <button type="button" class="quantity-btn quantity-decrease bg-gray-200 hover:bg-gray-300 text-lg font-bold w-8 h-8 rounded-full flex items-center justify-center">-</button>
-                                <input type="number" value="{{ f_item.quantity }}" min="0" class="quantity-input w-16 text-center border-gray-300 rounded-md shadow-sm mx-2" readonly>
-                                <button type="button" class="quantity-btn quantity-increase bg-gray-200 hover:bg-gray-300 text-lg font-bold w-8 h-8 rounded-full flex items-center justify-center">+</button>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-span-2 sm:col-span-1 text-right">
-                            <span class="font-semibold text-gray-800">= <span class="format-total-price">{{ f_item.row_total|floatformat:2 }}</span> руб.</span>
+                                <!-- Итоговая цена строки -->
+                                <div class="col-span-12 sm:col-span-3 text-right mt-1 sm:mt-0 flex justify-between sm:block border-t sm:border-0 pt-1 sm:pt-0 border-gray-200">
+                                    <span class="sm:hidden text-xs text-gray-400">Сумма:</span>
+                                    <span class="font-bold text-gray-800"><span class="format-total-price">{{ f_item.row_total|floatformat:0 }}</span> ₽</span>
+                                </div>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
             </div>
             {% endif %}
         
         {% empty %}
-        <div id="empty-cart-message" class="text-center py-10">Ваша корзина пуста.</div>
+        <div id="empty-cart-message" class="text-center py-16 bg-gray-50 rounded-lg">
+            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <p class="text-gray-500 text-lg">Ваша корзина пока пуста.</p>
+        </div>
         {% endfor %}
     </div>
 
 
     {% if photos_with_formats %}
-    <div id="checkout-form-container" class="border-t pt-8 mt-8">
-        <div id="bonus-message" class="hidden p-4 mb-6 bg-green-100 text-green-800 rounded-lg">
-            Отличный выбор! Сумма вашего заказа превышает {{ bonus_threshold|floatformat:2 }} руб. Вы получите бесплатный комплект фото на вашу почту!
+    <div id="checkout-form-container" class="border-t-2 border-gray-100 pt-8 mt-8">
+        <div id="bonus-message" class="hidden p-4 mb-6 bg-green-100 border border-green-200 text-green-800 rounded-lg flex items-start">
+            <svg class="w-6 h-6 mr-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div>
+                <span class="font-bold">Бонус активирован!</span> Сумма заказа превышает {{ bonus_threshold|floatformat:0 }} руб. Вы получите комплект фото бесплатно.
+            </div>
         </div>
 
-        <div class="text-right text-2xl md:text-3xl font-bold text-gray-800 mb-8">
-            Итого: <span id="total-price">{{ grand_total|floatformat:2 }}</span> руб.
+        <div class="flex justify-end items-end mb-8">
+            <div class="text-right">
+                <p class="text-gray-500 text-sm mb-1">Итого к оплате:</p>
+                <div class="text-3xl md:text-4xl font-bold text-blue-900">
+                    <span id="total-price">{{ grand_total|floatformat:2 }}</span> руб.
+                </div>
+            </div>
         </div>
 
-        <h2 class="text-2xl font-bold text-gray-800 mb-4">Оформление заказа</h2>
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Оформление заказа</h2>
         
-        <form action="{% url 'orders:create_order' %}" method="post">
+        <form action="{% url 'orders:create_order' %}" method="post" class="bg-gray-50 p-6 rounded-xl border border-gray-100">
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="customer_name" class="block text-sm font-medium text-gray-700">Ваше полное имя</label>
-                    <input type="text" name="customer_name" id="customer_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">Как вас зовут?</label>
+                    <input type="text" name="customer_name" id="customer_name" placeholder="Иван Иванов" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
                 </div>
                 <div>
-                    <label for="customer_phone" class="block text-sm font-medium text-gray-700">Телефон</label>
-                    <input type="tel" name="customer_phone" id="customer_phone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                    <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-1">Телефон для связи</label>
+                    <input type="tel" name="customer_phone" id="customer_phone" placeholder="+7 (999) 000-00-00" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
                 </div>
             </div>
             <div class="mt-6">
-                <label for="customer_email" class="block text-sm font-medium text-gray-700">Email</label>
-                <input type="email" name="customer_email" id="customer_email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">Email (куда отправить фото)</label>
+                <input type="email" name="customer_email" id="customer_email" placeholder="example@mail.ru" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
             </div>
             
             <div class="mt-8">
-                <button id="checkout-button" type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors hover:bg-blue-700">
+                <button id="checkout-button" type="submit" class="w-full bg-blue-600 text-white font-bold py-4 px-8 rounded-lg transition-all hover:bg-blue-700 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                     Перейти к оплате
                 </button>
-                <p id="checkout-error-message" class="text-gray-500 text-sm text-center mt-3">
-                    Выберите Формат и Количество понравившихся вам фото
-                </p>
+                <p id="checkout-error-message" class="text-center mt-4 text-sm font-medium"></p>
             </div>
         </form>
     </div>
@@ -180,6 +247,34 @@
 
 {% block extra_js %}
 <script>
+// === ФУНКЦИИ ДЛЯ LIGHTBOX (ПРОСМОТРА ФОТО) ===
+function openLightbox(imageUrl) {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-image');
+    if (modal && img) {
+        img.src = imageUrl;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Блокируем скролл страницы
+    }
+}
+
+function closeLightbox() {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-image');
+    if (modal) {
+        modal.classList.add('hidden');
+        if (img) img.src = ''; // Очищаем источник
+        document.body.style.overflow = ''; // Возвращаем скролл
+    }
+}
+
+// Закрытие по клавише Esc
+document.addEventListener('keydown', function(event) {
+    if (event.key === "Escape") {
+        closeLightbox();
+    }
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     const cartPageContainer = document.getElementById('cart-page-container');
     if (!cartPageContainer) return;
@@ -217,12 +312,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let grandTotal = 0;
         let hasItems = false; 
 
-        // Set для хранения ID форматов коллажей, которые мы УЖЕ посчитали
         let chargedCollageFormats = new Set();
         
         document.querySelectorAll('.cart-item-block').forEach(itemBlock => {
             if (itemBlock.dataset.photoId) {
-                // ЛОГИКА ДЛЯ ОБЫЧНЫХ ФОТО
                 itemBlock.querySelectorAll('.format-row').forEach(row => {
                     const price = parseFloat(row.dataset.price);
                     const quantity = parseInt(row.querySelector('.quantity-input').value);
@@ -244,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         rowTotal = price * quantity;
                     }
 
-                    row.querySelector('.format-total-price').textContent = rowTotal.toFixed(2);
+                    row.querySelector('.format-total-price').textContent = rowTotal.toFixed(0);
                     grandTotal += rowTotal;
 
                     if (quantity > 0) {
@@ -252,8 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             } else if (itemBlock.dataset.isFullSet === 'true') {
-                // ЛОГИКА ДЛЯ "ПОЛНОГО КОМПЛЕКТА"
-                // Теперь мы читаем цену из атрибута data-price, а не через Django-теги
                 const price = parseFloat(itemBlock.dataset.price);
                 if (!isNaN(price)) {
                     grandTotal += price;
@@ -270,22 +361,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (checkoutButton) {
             if (!hasItems) {
                 checkoutButton.disabled = true;
-                checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed');
-                checkoutButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                if (checkoutError) {
-                    checkoutError.textContent = 'Ваша корзина пуста.'; 
-                    checkoutError.classList.add('text-red-600');
-                    checkoutError.classList.remove('text-gray-500'); 
-                }
+                checkoutError.textContent = 'Ваша корзина пуста или не выбраны услуги.'; 
+                checkoutError.className = 'text-center mt-4 text-sm font-medium text-red-600';
             } else {
                 checkoutButton.disabled = false;
-                checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                checkoutButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                if (checkoutError) {
-                    checkoutError.textContent = 'Выберите Формат и Количество понравившихся вам фото';
-                    checkoutError.classList.remove('text-red-600');
-                    checkoutError.classList.add('text-gray-500'); 
-                }
+                checkoutError.textContent = 'Отличный выбор!';
+                checkoutError.className = 'text-center mt-4 text-sm font-medium text-green-600';
             }
         }
         
@@ -293,8 +374,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bonusMessage) {
             if (bonusThreshold > 0 && grandTotal >= bonusThreshold) {
                 bonusMessage.classList.remove('hidden');
+                bonusMessage.classList.add('flex');
             } else {
                 bonusMessage.classList.add('hidden');
+                bonusMessage.classList.remove('flex');
             }
         }
     };
@@ -329,13 +412,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (quantity === 0) {
                 quantity = 1;
                 target.textContent = "✓ В коллаже";
-                target.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                target.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                target.classList.remove('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-100');
+                target.classList.add('bg-blue-600', 'text-white', 'border-blue-600', 'hover:bg-blue-700');
             } else {
                 quantity = 0;
-                target.textContent = "Добавить в коллаж";
-                target.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                target.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+                target.textContent = "Добавить";
+                target.classList.add('bg-white', 'text-gray-700', 'border-gray-300', 'hover:bg-gray-100');
+                target.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'hover:bg-blue-700');
             }
             input.value = quantity;
 
@@ -349,6 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateTotals(); 
 
+    // --- ОФЕРТА ---
     const albumId = cartPageContainer.dataset.albumId;
     if (albumId) {
         const modal = document.getElementById('oferta-modal');
