@@ -10,7 +10,6 @@ class GroupingAlbum(models.Model):
     title = models.CharField(max_length=200, verbose_name="Название папки")
     
     # Ссылка на саму себя для вложенности
-    # limit_choices_to={'is_grouping': True} ГАРАНТИРУЕТ, что родителем может быть ТОЛЬКО ПАПКА
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
@@ -53,10 +52,6 @@ class PhotoAlbum(GroupingAlbum):
         proxy = True
         verbose_name = "Альбом с фото"
         verbose_name_plural = "Альбомы с фото"
-    
-    def save(self, *args, **kwargs):
-        self.is_grouping = False  # Принудительно ставим False при сохранении через эту модель
-        super().save(*args, **kwargs)
 
 
 # === 3. СЛУЖЕБНАЯ ПРОКСИ-МОДЕЛЬ ===
@@ -102,9 +97,6 @@ class Photo(models.Model):
         super().save(*args, **kwargs)
 
     def create_watermarked_thumbnail(self):
-        """
-        Создает качественное превью с водяным знаком.
-        """
         try:
             img = Image.open(self.image)
             img = ImageOps.exif_transpose(img) 
