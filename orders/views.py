@@ -11,7 +11,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 import threading
 
-# === ПОЧТОВЫЙ ПОТОК (Для отправки писем без зависания сайта) ===
+# === ПОЧТОВЫЙ ПОТОК (Для отправки писем без зависания сайта) уу ===
 class EmailThread(threading.Thread):
     def __init__(self, order):
         self.order = order
