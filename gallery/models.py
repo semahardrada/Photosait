@@ -10,13 +10,15 @@ class GroupingAlbum(models.Model):
     title = models.CharField(max_length=200, verbose_name="Название папки")
     
     # Ссылка на саму себя для вложенности
+    # limit_choices_to={'is_grouping': True} ГАРАНТИРУЕТ, что родителем может быть ТОЛЬКО ПАПКА
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
         null=True, 
         blank=True, 
         related_name='sub_albums', 
-        verbose_name="Родительская папка"
+        verbose_name="Родительская папка",
+        limit_choices_to={'is_grouping': True} 
     )
     cover_image = models.ImageField(upload_to='album_covers/', blank=True, null=True, verbose_name="Обложка")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
@@ -29,7 +31,7 @@ class GroupingAlbum(models.Model):
     
     expires_at = models.DateTimeField(blank=True, null=True, verbose_name="Срок действия доступа")
 
-    # ИСПРАВЛЕНИЕ: Поле цены должно быть здесь, в реальной таблице
+    # Цена здесь, чтобы не было ошибок прокси
     full_set_price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -47,11 +49,14 @@ class GroupingAlbum(models.Model):
 
 # === 2. ПРОКСИ-МОДЕЛЬ ДЛЯ АЛЬБОМОВ ===
 class PhotoAlbum(GroupingAlbum):
-    # Здесь НЕТ полей, только настройки поведения
     class Meta:
         proxy = True
         verbose_name = "Альбом с фото"
         verbose_name_plural = "Альбомы с фото"
+    
+    def save(self, *args, **kwargs):
+        self.is_grouping = False  # Принудительно ставим False при сохранении через эту модель
+        super().save(*args, **kwargs)
 
 
 # === 3. СЛУЖЕБНАЯ ПРОКСИ-МОДЕЛЬ ===
@@ -102,28 +107,24 @@ class Photo(models.Model):
         """
         try:
             img = Image.open(self.image)
-            img = ImageOps.exif_transpose(img) # Поворачиваем по EXIF
+            img = ImageOps.exif_transpose(img) 
 
             if img.mode != 'RGB':
                 img = img.convert('RGB')
 
-            # Ресайз
             max_size = 1500
             ratio = min(max_size / img.width, max_size / img.height)
             if ratio < 1:
                 new_size = (int(img.width * ratio), int(img.height * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-            # Рисование
             overlay = Image.new('RGBA', img.size, (255, 255, 255, 0))
             draw_overlay = ImageDraw.Draw(overlay)
             width, height = img.size
 
-            # Линии
             draw_overlay.line((0, 0) + img.size, fill=(255, 255, 255, 80), width=3)
             draw_overlay.line((0, height) + (width, 0), fill=(255, 255, 255, 80), width=3)
 
-            # Текст
             text = "ОБРАЗЕЦ • НЕ КОПИРОВАТЬ"
             font_size = int(width / 15)
             try:
