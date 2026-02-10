@@ -8,26 +8,28 @@ from django.http import HttpResponseRedirect
 from .models import Photo, Album, GroupingAlbum, PhotoAlbum
 from .forms import MultiplePhotoUploadForm
 
-# === БАЗОВЫЙ КЛАСС (ОБЩИЕ НАСТРОЙКИ) ===
+# === БАЗОВЫЙ КЛАСС ===
 class BaseAlbumAdmin(admin.ModelAdmin):
-    list_display = ('title', 'cover_thumbnail', 'parent_link', 'expires_at', 'created_at')
+    # Добавил 'cover_thumbnail' в список отображения
+    list_display = ('title', 'cover_thumbnail', 'parent_link', 'created_at')
     search_fields = ('title',)
     readonly_fields = ('access_token', 'cover_preview')
     list_per_page = 25
     save_on_top = True
 
-    # --- ВИЗУАЛИЗАЦИЯ ---
+    # --- ПРЕВЬЮ ДЛЯ СПИСКА (МАЛЕНЬКОЕ) ---
     @admin.display(description="Обложка")
+    def cover_thumbnail(self, obj):
+        if obj.cover_image:
+            return format_html('<img src="{}" width="60" height="60" style="object-fit: cover; border-radius: 4px;">', obj.cover_image.url)
+        return "—"
+
+    # --- ПРЕВЬЮ ДЛЯ КАРТОЧКИ (БОЛЬШОЕ) ---
+    @admin.display(description="Текущая обложка")
     def cover_preview(self, obj):
         if obj.cover_image:
             return format_html('<img src="{}" style="max-height: 200px; border-radius: 5px;">', obj.cover_image.url)
         return "Нет обложки"
-
-    @admin.display(description="Обложка")
-    def cover_thumbnail(self, obj):
-        if obj.cover_image:
-            return format_html('<img src="{}" width="50" style="border-radius: 3px;">', obj.cover_image.url)
-        return "—"
 
     @admin.display(description="Родительская папка", ordering='parent')
     def parent_link(self, obj):
@@ -40,7 +42,7 @@ class BaseAlbumAdmin(admin.ModelAdmin):
         js = ('js/admin_copy_link.js',)
 
 
-# === INLINES (Вложенные альбомы) ===
+# === INLINES ===
 class PhotoAlbumInline(admin.TabularInline):
     model = PhotoAlbum
     fk_name = 'parent'
@@ -66,21 +68,22 @@ class PhotoAlbumInline(admin.TabularInline):
         super().save_model(request, obj, form, change)
 
 
-# === ПАПКИ (ЕСТЬ ССЫЛКИ!) ===
+# === ПАПКИ (Таймер ЕСТЬ) ===
 @admin.register(GroupingAlbum)
 class GroupingAlbumAdmin(BaseAlbumAdmin):
+    # Добавляем copy_link_button сюда
     list_display = ('title', 'cover_thumbnail', 'copy_link_button', 'parent_link', 'created_at')
     
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('copy_link_button_large',)
     
     list_filter = ('created_at',)
+    # Здесь исключаем только технические поля
     exclude = ('is_grouping', 'full_set_price') 
     inlines = [PhotoAlbumInline]
 
     def get_queryset(self, request):
         return super().get_queryset(request).filter(is_grouping=True)
     
-    # --- ГЕНЕРАТОР ССЫЛОК (ТОЛЬКО ДЛЯ ПАПОК) ---
     @admin.display(description="Ссылка для клиента")
     def copy_link_button(self, obj):
         path = reverse('gallery:album_detail', args=[obj.access_token])
@@ -123,14 +126,17 @@ class GroupingAlbumAdmin(BaseAlbumAdmin):
         super().save_model(request, obj, form, change)
 
 
-# === ФОТО-АЛЬБОМЫ ===
+# === ФОТО-АЛЬБОМЫ (Таймера НЕТ) ===
 @admin.register(PhotoAlbum)
 class PhotoAlbumAdmin(BaseAlbumAdmin):
-    # copy_link_button УБРАН
-    list_display = ('title', 'parent_link', 'photo_count', 'upload_action', 'created_at')
+    # Добавили 'cover_thumbnail' в список
+    list_display = ('title', 'cover_thumbnail', 'parent_link', 'photo_count', 'upload_action', 'created_at')
     
     list_filter = ('parent', 'created_at')
-    exclude = ('is_grouping', 'full_set_price')
+    
+    # ВАЖНО: Добавили 'expires_at' в список исключений. 
+    # Теперь в альбоме с фото нет таймера.
+    exclude = ('is_grouping', 'expires_at') 
     
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('upload_action_large',)
 
@@ -174,7 +180,6 @@ class PhotoAlbumAdmin(BaseAlbumAdmin):
         super().save_model(request, obj, form, change)
 
 
-# === ФОТОГРАФИИ ===
 @admin.register(Photo)
 class PhotoAdmin(admin.ModelAdmin):
     exclude = ('processed_image',)
