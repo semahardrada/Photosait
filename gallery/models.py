@@ -5,10 +5,11 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
 
-# === 1. ГЛАВНАЯ ТАБЛИЦА (GROUPING ALBUM) ===
+# === 1. БАЗОВАЯ МОДЕЛЬ (ОБЩАЯ ДЛЯ ВСЕХ ПАПОК) ===
 class GroupingAlbum(models.Model):
-    title = models.CharField(max_length=200, verbose_name="Название папки")
+    title = models.CharField(max_length=200, verbose_name="Название")
     
+    # Родительская папка
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
@@ -23,6 +24,7 @@ class GroupingAlbum(models.Model):
     
     access_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Access Token")
     
+    # True = Это папка (Садик или Группа), False = Это конечный альбом (Ребенок)
     is_grouping = models.BooleanField(default=True, editable=False)
     
     expires_at = models.DateTimeField(blank=True, null=True, verbose_name="Срок действия доступа")
@@ -38,37 +40,52 @@ class GroupingAlbum(models.Model):
         return self.title
     
     class Meta:
-        verbose_name = "Папка"
-        verbose_name_plural = "Папки"
+        verbose_name = "Папка (Общая)"
+        verbose_name_plural = "Папки (Общие)"
 
 
-# === 2. ПРОКСИ-МОДЕЛЬ ДЛЯ АЛЬБОМОВ ===
-class PhotoAlbum(GroupingAlbum):
+# === 2. ПРОКСИ: САДИК (Корневая папка) ===
+class Kindergarten(GroupingAlbum):
     class Meta:
         proxy = True
-        verbose_name = "Альбом с фото"
-        verbose_name_plural = "Альбомы с фото"
+        verbose_name = "Садик"
+        verbose_name_plural = "1. Садики"
+
+# === 3. ПРОКСИ: ГРУППА (Вложенная папка) ===
+class Group(GroupingAlbum):
+    class Meta:
+        proxy = True
+        verbose_name = "Группа"
+        verbose_name_plural = "2. Группы"
+
+# === 4. ПРОКСИ: РЕБЁНОК (Альбом с фото) ===
+class ChildAlbum(GroupingAlbum):
+    class Meta:
+        proxy = True
+        verbose_name = "Ребёнок (Альбом)"
+        verbose_name_plural = "3. Дети (Альбомы)"
     
     def save(self, *args, **kwargs):
-        self.is_grouping = False
+        self.is_grouping = False # Это конечный альбом, в нем лежат фото
         super().save(*args, **kwargs)
 
-
-# === 3. СЛУЖЕБНАЯ ПРОКСИ-МОДЕЛЬ ===
+# === 5. СЛУЖЕБНАЯ ПРОКСИ (Для совместимости) ===
 class Album(GroupingAlbum):
     class Meta:
         proxy = True
         verbose_name = "Все объекты (Служебное)"
         verbose_name_plural = "Все объекты (Служебное)"
+# Для совместимости со старыми ссылками
+PhotoAlbum = ChildAlbum 
 
 
-# === 4. МОДЕЛЬ ФОТОГРАФИИ (С НОВОЙ ЗАЩИТОЙ) ===
+# === 6. МОДЕЛЬ ФОТОГРАФИИ ===
 class Photo(models.Model):
     album = models.ForeignKey(
-        'PhotoAlbum',
+        'ChildAlbum', # Ссылаемся на ребенка
         related_name='photos',
         on_delete=models.CASCADE,
-        verbose_name="Альбом",
+        verbose_name="Ребёнок",
         limit_choices_to={'is_grouping': False}
     )
     image = models.ImageField(upload_to='photos/originals/', verbose_name="Оригинальное фото")
@@ -97,73 +114,52 @@ class Photo(models.Model):
         super().save(*args, **kwargs)
 
     def create_watermarked_thumbnail(self):
-        """
-        Создает качественное превью с водяным знаком 'photowatermark' по всей площади.
-        """
         try:
-            # 1. Открываем и поворачиваем
             img = Image.open(self.image)
             img = ImageOps.exif_transpose(img) 
 
             if img.mode != 'RGB':
                 img = img.convert('RGB')
 
-            # 2. Ресайз (до 1500px)
+            # Ресайз
             max_size = 1500
             ratio = min(max_size / img.width, max_size / img.height)
             if ratio < 1:
                 new_size = (int(img.width * ratio), int(img.height * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-            # 3. ПОДГОТОВКА ВОДЯНОГО ЗНАКА (СЕТКА)
-            width, height = img.size
-            
-            # Создаем прозрачный слой для рисования
+            # Водяной знак
             overlay = Image.new('RGBA', img.size, (255, 255, 255, 0))
             draw = ImageDraw.Draw(overlay)
+            width, height = img.size
             
             text = "photowatermark"
-            
-            # Подбираем шрифт (покрупнее)
-            font_size = int(width / 15) 
-            try:
-                font = ImageFont.truetype("arial.ttf", font_size)
-            except IOError:
-                font = ImageFont.load_default()
+            font_size = int(width / 15)
+            try: font = ImageFont.truetype("arial.ttf", font_size)
+            except IOError: font = ImageFont.load_default()
 
-            # Вычисляем размер одного блока текста
             bbox = draw.textbbox((0, 0), text, font=font)
             text_w = bbox[2] - bbox[0]
             text_h = bbox[3] - bbox[1]
-            
-            # Отступы между надписями
             padding_x = text_w * 0.8
             padding_y = text_h * 2.5
 
-            # Рисуем сетку текста
-            # Мы идем циклом по всей ширине и высоте картинки
             y = 0
             while y < height:
                 x = 0
-                # Сдвигаем каждый второй ряд для "шахматного" порядка
-                if int(y / padding_y) % 2 == 1:
-                    x = int(padding_x / 2)
-                
+                if int(y / padding_y) % 2 == 1: x = int(padding_x / 2)
                 while x < width:
-                    # Рисуем текст (полупрозрачный белый)
                     draw.text((x, y), text, font=font, fill=(255, 255, 255, 70))
                     x += text_w + padding_x
                 y += text_h + padding_y
 
-            # Добавляем центральный крест (тонкий, но заметный)
+            # Крест
             draw.line((0, 0) + img.size, fill=(255, 255, 255, 50), width=2)
             draw.line((0, height) + (width, 0), fill=(255, 255, 255, 50), width=2)
 
-            # Накладываем слой
             watermarked = Image.alpha_composite(img.convert('RGBA'), overlay)
             watermarked = watermarked.convert('RGB')
 
-            # 4. Сохраняем
             thumb_io = BytesIO()
             watermarked.save(thumb_io, format='JPEG', quality=95, subsampling=0)
 

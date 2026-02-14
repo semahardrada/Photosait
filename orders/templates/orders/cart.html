@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- === МОДАЛЬНОЕ ОКНО ОФЕРТЫ === -->
+<!-- ОФЕРТА (без изменений) -->
 {% if album %}
 <div id="oferta-backdrop" class="hidden fixed inset-0 z-40 bg-black bg-opacity-75"></div>
 <div id="oferta-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -16,7 +16,6 @@
                 <p>1. Приобретая фотографии, вы получаете цифровые копии высокого качества.</p>
                 <p>2. Фотографии предоставляются для личного использования.</p>
                 <p>3. Возврат цифровых товаров надлежащего качества не производится.</p>
-                <p>...</p>
             </div>
         </div>
         <div class="p-6 border-t bg-gray-50 rounded-b-lg mt-auto">
@@ -34,28 +33,18 @@
 </div>
 {% endif %}
 
-<!-- === НОВОЕ: LIGHTBOX (ПРОСМОТР ФОТО) === -->
+<!-- LIGHTBOX -->
 <div id="lightbox-modal" class="hidden fixed inset-0 z-[60] bg-black bg-opacity-90 flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeLightbox()">
     <div class="relative max-w-full max-h-full">
-        <!-- Кнопка закрытия -->
         <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-4xl hover:text-gray-300 focus:outline-none">&times;</button>
-        
-        <!-- Картинка -->
         <img id="lightbox-image" src="" alt="Full view" class="max-h-[90vh] max-w-[95vw] object-contain rounded shadow-2xl" onclick="event.stopPropagation()">
     </div>
 </div>
 
-<!-- === ОСНОВНОЙ КОНТЕНТ КОРЗИНЫ === -->
-<div class="max-w-5xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow-lg" 
-     id="cart-page-container" 
-     data-bonus-threshold="{{ bonus_threshold|default:0 }}"
-     {% if album %}data-album-id="{{ album.id }}"{% endif %}>
-     
+<div class="max-w-5xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow-lg" id="cart-page-container" data-bonus-threshold="{{ bonus_threshold|default:0 }}" {% if album %}data-album-id="{{ album.id }}"{% endif %}>
     <div class="flex justify-between items-center mb-8 border-b pb-4">
         <h1 class="text-2xl md:text-4xl font-bold text-gray-800">Ваша корзина</h1>
-        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base">
-            &larr; Вернуться к альбому
-        </a>
+        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base">&larr; Вернуться к альбому</a>
     </div>
 
     {% if album and album.full_set_price and not cart.buy_full_set %}
@@ -72,97 +61,45 @@
     {% endif %}
 
     <div id="cart-items-container" class="space-y-8">
-        
         {% for item in photos_with_formats %}
             {% if item.is_full_set %}
-            <!-- Блок "Всего комплекта" -->
-            <div class="cart-item-block mb-8 p-6 bg-green-50 border border-green-200 rounded-lg flex flex-col md:flex-row items-center" 
-                 data-is-full-set="true" 
-                 data-price="{{ item.full_set_price|stringformat:'.2f' }}">
-                 
+            <div class="cart-item-block mb-8 p-6 bg-green-50 border border-green-200 rounded-lg flex flex-col md:flex-row items-center" data-is-full-set="true" data-price="{{ item.full_set_price|stringformat:'.2f' }}">
                  <div class="w-full md:w-1/4 mb-4 md:mb-0 md:mr-6 flex justify-center">
                     {% if item.photo_obj.image_url %}
-                        <!-- Добавил onclick для просмотра полного комплекта тоже -->
-                        <img src="{{ item.photo_obj.image_url }}" 
-                             loading="lazy" 
-                             onclick="openLightbox('{{ item.photo_obj.image_url }}')"
-                             class="h-32 w-auto object-contain rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
+                        <img src="{{ item.photo_obj.image_url }}" loading="lazy" onclick="openLightbox('{{ item.photo_obj.image_url }}')" class="h-32 w-auto object-contain rounded shadow-sm cursor-pointer hover:opacity-90 transition-opacity">
                     {% else %}
                         <div class="h-32 w-32 bg-gray-200 rounded flex items-center justify-center text-gray-400">Нет фото</div>
                     {% endif %}
                  </div>
-
                  <div class="text-center md:text-left">
                      <p class="font-bold text-xl text-green-900">{{ item.photo_obj.name }}</p>
                      <p class="text-green-700 mt-1">Полный доступ ко всем фотографиям в оригинальном качестве.</p>
                      <p class="font-bold text-2xl mt-2 text-gray-800">{{ item.full_set_price|floatformat:0 }} руб.</p>
                  </div>
             </div>
-
             {% else %}
-            <!-- Блок обычной фотографии -->
             <div class="cart-item-block mb-8 pb-8 border-b border-gray-100 last:border-0" data-photo-id="{{ item.photo_obj.id }}">
                 <div class="flex flex-col md:flex-row gap-6">
-                    
-                    <!-- БЛОК С ФОТО (С КЛИКОМ) -->
                     <div class="w-full md:w-1/3 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100" style="min-height: 250px;">
                         {% if item.photo_obj.processed_image %}
                             <div class="relative group cursor-pointer" onclick="openLightbox('{{ item.photo_obj.processed_image.url }}')">
-                                <img src="{{ item.photo_obj.processed_image.url }}" 
-                                     alt="Фото {{ item.photo_obj.id }}" 
-                                     loading="lazy"
-                                     class="max-h-64 w-auto max-w-full object-contain shadow-sm rounded group-hover:opacity-90 transition-opacity">
-                                <!-- Иконка лупы при наведении -->
-                                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <div class="bg-black bg-opacity-50 text-white p-2 rounded-full">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                        </svg>
-                                    </div>
-                                </div>
+                                <img src="{{ item.photo_obj.processed_image.url }}" alt="Фото {{ item.photo_obj.id }}" loading="lazy" class="max-h-64 w-auto max-w-full object-contain shadow-sm rounded group-hover:opacity-90 transition-opacity">
                             </div>
-                        {% else %}
-                            <img src="{{ item.photo_obj.image.url }}" 
-                                 alt="Фото {{ item.photo_obj.id }}" 
-                                 loading="lazy"
-                                 class="max-h-64 w-auto max-w-full object-contain opacity-50 grayscale">
                         {% endif %}
                     </div>
-                    
-                    <!-- Правая часть -->
                     <div class="w-full md:w-2/3">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="font-bold text-lg text-gray-800">Фотография #{{ item.photo_obj.id }}</h3>
-                        </div>
-                
-                        <!-- Список форматов -->
+                        <div class="flex justify-between items-start mb-4"><h3 class="font-bold text-lg text-gray-800">Фотография #{{ item.photo_obj.id }}</h3></div>
                         <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
                             {% for f_item in item.formats %}
-                            <div class="format-row grid grid-cols-12 gap-2 items-center" 
-                                 data-format-id="{{ f_item.format_obj.id }}"
-                                 data-price="{{ f_item.price|stringformat:'.2f' }}"
-                                 data-is-collage="{{ f_item.format_obj.is_collage|yesno:'true,false' }}">
-                                
-                                <!-- Название и цена -->
+                            <div class="format-row grid grid-cols-12 gap-2 items-center" data-format-id="{{ f_item.format_obj.id }}" data-price="{{ f_item.price|stringformat:'.2f' }}" data-is-collage="{{ f_item.format_obj.is_collage|yesno:'true,false' }}">
                                 <div class="col-span-6 sm:col-span-5">
                                     <span class="font-medium text-gray-700 block text-sm sm:text-base">{{ f_item.format_obj.name }}</span>
                                     <span class="text-xs text-gray-500">{{ f_item.price|floatformat:0 }} руб.</span>
-                                    {% if f_item.format_obj.is_collage %}
-                                        <span class="text-xs text-blue-500 block leading-tight mt-0.5">(Оплата 1 раз за заказ)</span>
-                                    {% endif %}
                                 </div>
-                                
-                                <!-- Кнопки управления -->
                                 <div class="col-span-6 sm:col-span-4 flex justify-end sm:justify-center">
                                     {% if f_item.format_obj.is_collage %}
                                         <input type="hidden" value="{{ f_item.quantity }}" class="quantity-input">
-                                        <button type="button" 
-                                                class="collage-toggle-btn w-full py-1.5 px-2 rounded text-xs sm:text-sm font-bold transition-colors text-center border
-                                                {% if f_item.quantity > 0 %}
-                                                    bg-blue-600 text-white border-blue-600 hover:bg-blue-700
-                                                {% else %}
-                                                    bg-white text-gray-700 border-gray-300 hover:bg-gray-100
-                                                {% endif %}">
+                                        <button type="button" class="collage-toggle-btn w-full py-1.5 px-2 rounded text-xs sm:text-sm font-bold transition-colors text-center border {% if f_item.quantity > 0 %}bg-blue-600 text-white border-blue-600 hover:bg-blue-700{% else %}bg-white text-gray-700 border-gray-300 hover:bg-gray-100{% endif %}">
                                             {% if f_item.quantity > 0 %}В коллаже{% else %}Добавить{% endif %}
                                         </button>
                                     {% else %}
@@ -173,8 +110,6 @@
                                         </div>
                                     {% endif %}
                                 </div>
-
-                                <!-- Итоговая цена строки -->
                                 <div class="col-span-12 sm:col-span-3 text-right mt-1 sm:mt-0 flex justify-between sm:block border-t sm:border-0 pt-1 sm:pt-0 border-gray-200">
                                     <span class="sm:hidden text-xs text-gray-400">Сумма:</span>
                                     <span class="font-bold text-gray-800"><span class="format-total-price">{{ f_item.row_total|floatformat:0 }}</span> ₽</span>
@@ -186,31 +121,24 @@
                 </div>
             </div>
             {% endif %}
-        
         {% empty %}
         <div id="empty-cart-message" class="text-center py-16 bg-gray-50 rounded-lg">
-            <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
             <p class="text-gray-500 text-lg">Ваша корзина пока пуста.</p>
         </div>
         {% endfor %}
     </div>
 
-
     {% if photos_with_formats %}
     <div id="checkout-form-container" class="border-t-2 border-gray-100 pt-8 mt-8">
         <div id="bonus-message" class="hidden p-4 mb-6 bg-green-100 border border-green-200 text-green-800 rounded-lg flex items-start">
             <svg class="w-6 h-6 mr-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <div>
-                <span class="font-bold">Бонус активирован!</span> Сумма заказа превышает {{ bonus_threshold|floatformat:0 }} руб. Вы получите комплект фото бесплатно.
-            </div>
+            <div><span class="font-bold">Бонус активирован!</span> Сумма заказа превышает {{ bonus_threshold|floatformat:0 }} руб. Вы получите комплект фото бесплатно.</div>
         </div>
 
         <div class="flex justify-end items-end mb-8">
             <div class="text-right">
                 <p class="text-gray-500 text-sm mb-1">Итого к оплате:</p>
-                <div class="text-3xl md:text-4xl font-bold text-blue-900">
-                    <span id="total-price">{{ grand_total|floatformat:2 }}</span> руб.
-                </div>
+                <div class="text-3xl md:text-4xl font-bold text-blue-900"><span id="total-price">{{ grand_total|floatformat:2 }}</span> руб.</div>
             </div>
         </div>
 
@@ -220,23 +148,22 @@
             {% csrf_token %}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">Как вас зовут?</label>
+                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">Как вас зовут? *</label>
                     <input type="text" name="customer_name" id="customer_name" placeholder="Иван Иванов" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
                 </div>
                 <div>
-                    <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-1">Телефон для связи</label>
-                    <input type="tel" name="customer_phone" id="customer_phone" placeholder="+7 (999) 000-00-00" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
+                    <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-1">Телефон для связи (необязательно)</label>
+                    <input type="tel" name="customer_phone" id="customer_phone" placeholder="+7 (999) 000-00-00" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
                 </div>
             </div>
             <div class="mt-6">
-                <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">Email (куда отправить фото)</label>
-                <input type="email" name="customer_email" id="customer_email" placeholder="example@mail.ru" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
+                <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">Email (необязательно)</label>
+                <input type="email" name="customer_email" id="customer_email" placeholder="example@mail.ru" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-3">
+                <p class="text-xs text-gray-500 mt-1">Укажите Email, если хотите получить чек и ссылку на фото почтой.</p>
             </div>
             
             <div class="mt-8">
-                <button id="checkout-button" type="submit" class="w-full bg-blue-600 text-white font-bold py-4 px-8 rounded-lg transition-all hover:bg-blue-700 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                    Перейти к оплате
-                </button>
+                <button id="checkout-button" type="submit" class="w-full bg-blue-600 text-white font-bold py-4 px-8 rounded-lg transition-all hover:bg-blue-700 shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed">Перейти к оплате</button>
                 <p id="checkout-error-message" class="text-center mt-4 text-sm font-medium"></p>
             </div>
         </form>
@@ -247,35 +174,30 @@
 
 {% block extra_js %}
 <script>
-// === ФУНКЦИИ ДЛЯ LIGHTBOX (ПРОСМОТРА ФОТО) ===
+// (JS КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ, КАК БЫЛ В ПРОШЛОМ РАБОЧЕМ ВАРИАНТЕ)
 function openLightbox(imageUrl) {
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-image');
     if (modal && img) {
         img.src = imageUrl;
         modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Блокируем скролл страницы
+        document.body.style.overflow = 'hidden';
     }
 }
-
 function closeLightbox() {
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-image');
     if (modal) {
         modal.classList.add('hidden');
-        if (img) img.src = ''; // Очищаем источник
-        document.body.style.overflow = ''; // Возвращаем скролл
+        if (img) img.src = '';
+        document.body.style.overflow = '';
     }
 }
-
-// Закрытие по клавише Esc
-document.addEventListener('keydown', function(event) {
-    if (event.key === "Escape") {
-        closeLightbox();
-    }
-});
+document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeLightbox(); });
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ... (Оставшийся JS код для корзины, таймера и оферты) ...
+    // Вставь сюда тот же JS, что был в прошлом успешном варианте файла cart.html
     const cartPageContainer = document.getElementById('cart-page-container');
     if (!cartPageContainer) return;
 
@@ -311,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateTotals = () => {
         let grandTotal = 0;
         let hasItems = false; 
-
         let chargedCollageFormats = new Set();
         
         document.querySelectorAll('.cart-item-block').forEach(itemBlock => {
@@ -321,42 +242,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     const quantity = parseInt(row.querySelector('.quantity-input').value);
                     const formatId = row.dataset.formatId;
                     const isCollage = row.dataset.isCollage === 'true';
-
                     let rowTotal = 0;
-
                     if (isCollage) {
                         if (quantity > 0) {
-                            if (!chargedCollageFormats.has(formatId)) {
-                                rowTotal = price;
-                                chargedCollageFormats.add(formatId);
-                            } else {
-                                rowTotal = 0;
-                            }
+                            if (!chargedCollageFormats.has(formatId)) { rowTotal = price; chargedCollageFormats.add(formatId); }
+                            else { rowTotal = 0; }
                         }
-                    } else {
-                        rowTotal = price * quantity;
-                    }
-
+                    } else { rowTotal = price * quantity; }
                     row.querySelector('.format-total-price').textContent = rowTotal.toFixed(0);
                     grandTotal += rowTotal;
-
-                    if (quantity > 0) {
-                        hasItems = true;
-                    }
+                    if (quantity > 0) hasItems = true;
                 });
             } else if (itemBlock.dataset.isFullSet === 'true') {
                 const price = parseFloat(itemBlock.dataset.price);
-                if (!isNaN(price)) {
-                    grandTotal += price;
-                    hasItems = true;
-                }
+                if (!isNaN(price)) { grandTotal += price; hasItems = true; }
             }
         });
 
         const totalPriceEl = document.getElementById('total-price');
-        if (totalPriceEl) {
-             totalPriceEl.textContent = grandTotal.toFixed(2);
-        }
+        if (totalPriceEl) totalPriceEl.textContent = grandTotal.toFixed(2);
         
         if (checkoutButton) {
             if (!hasItems) {
@@ -384,31 +288,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cartPageContainer.addEventListener('click', (event) => {
         const target = event.target;
-
         if (target.classList.contains('quantity-btn')) {
             const row = target.closest('.format-row');
             const input = row.querySelector('.quantity-input');
             let quantity = parseInt(input.value);
-
-            if (target.classList.contains('quantity-decrease')) {
-                quantity = Math.max(0, quantity - 1);
-            } else {
-                quantity += 1;
-            }
+            if (target.classList.contains('quantity-decrease')) quantity = Math.max(0, quantity - 1);
+            else quantity += 1;
             input.value = quantity;
-            
             const photoId = target.closest('.cart-item-block').dataset.photoId;
             const formatId = row.dataset.formatId;
-            updateCartOnServer(photoId, formatId, quantity).then(() => {
-                updateTotals(); 
-            });
+            updateCartOnServer(photoId, formatId, quantity).then(() => { updateTotals(); });
         }
-
         if (target.classList.contains('collage-toggle-btn')) {
             const row = target.closest('.format-row');
             const input = row.querySelector('.quantity-input');
             let quantity = parseInt(input.value);
-
             if (quantity === 0) {
                 quantity = 1;
                 target.textContent = "✓ В коллаже";
@@ -421,18 +315,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 target.classList.remove('bg-blue-600', 'text-white', 'border-blue-600', 'hover:bg-blue-700');
             }
             input.value = quantity;
-
             const photoId = target.closest('.cart-item-block').dataset.photoId;
             const formatId = row.dataset.formatId;
-            updateCartOnServer(photoId, formatId, quantity).then(() => {
-                updateTotals(); 
-            });
+            updateCartOnServer(photoId, formatId, quantity).then(() => { updateTotals(); });
         }
     });
 
     updateTotals(); 
 
-    // --- ОФЕРТА ---
     const albumId = cartPageContainer.dataset.albumId;
     if (albumId) {
         const modal = document.getElementById('oferta-modal');
@@ -440,22 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const acceptBtn = document.getElementById('oferta-accept-btn');
         const checkbox = document.getElementById('oferta-checkbox');
         const storageKey = `ofertaAccepted_${albumId}`;
-
-        if (sessionStorage.getItem(storageKey) !== 'true') {
-            modal.classList.remove('hidden');
-            backdrop.classList.remove('hidden');
-        }
-
+        if (sessionStorage.getItem(storageKey) !== 'true') { modal.classList.remove('hidden'); backdrop.classList.remove('hidden'); }
         checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-                acceptBtn.disabled = false;
-                acceptBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                acceptBtn.disabled = true;
-                acceptBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            }
+            if (checkbox.checked) { acceptBtn.disabled = false; acceptBtn.classList.remove('opacity-50', 'cursor-not-allowed'); } 
+            else { acceptBtn.disabled = true; acceptBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
         });
-
         acceptBtn.addEventListener('click', () => {
             if (acceptBtn.disabled) return; 
             modal.classList.add('hidden');
