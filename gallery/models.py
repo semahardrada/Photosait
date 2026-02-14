@@ -5,11 +5,11 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
 
-# === 1. БАЗОВАЯ МОДЕЛЬ (ОБЩАЯ ДЛЯ ВСЕХ ПАПОК) ===
+# === 1. ГЛАВНАЯ СТРАНИЦА (ОБЩАЯ ТАБЛИЦА) ===
 class GroupingAlbum(models.Model):
     title = models.CharField(max_length=200, verbose_name="Название")
     
-    # Родительская папка
+    # Родительская папка (может быть null для Садика)
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
@@ -24,11 +24,12 @@ class GroupingAlbum(models.Model):
     
     access_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Access Token")
     
-    # True = Это папка (Садик или Группа), False = Это конечный альбом (Ребенок)
+    # True = Папка (Садик/Группа), False = Альбом (Ребенок)
     is_grouping = models.BooleanField(default=True, editable=False)
     
     expires_at = models.DateTimeField(blank=True, null=True, verbose_name="Срок действия доступа")
 
+    # ВЕРНУЛ ФИКСИРОВАННУЮ ЦЕНУ ПО УМОЛЧАНИЮ
     full_set_price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -40,25 +41,36 @@ class GroupingAlbum(models.Model):
         return self.title
     
     class Meta:
-        verbose_name = "Папка (Общая)"
-        verbose_name_plural = "Папки (Общие)"
+        verbose_name = "Объект галереи"
+        verbose_name_plural = "Объекты галереи"
 
 
-# === 2. ПРОКСИ: САДИК (Корневая папка) ===
+# === 2. ПРОКСИ: САДИК (Уровень 1) ===
 class Kindergarten(GroupingAlbum):
     class Meta:
         proxy = True
         verbose_name = "Садик"
         verbose_name_plural = "1. Садики"
+    
+    def save(self, *args, **kwargs):
+        self.is_grouping = True
+        self.parent = None # У садика нет родителя
+        super().save(*args, **kwargs)
 
-# === 3. ПРОКСИ: ГРУППА (Вложенная папка) ===
+
+# === 3. ПРОКСИ: ГРУППА (Уровень 2) ===
 class Group(GroupingAlbum):
     class Meta:
         proxy = True
         verbose_name = "Группа"
         verbose_name_plural = "2. Группы"
+    
+    def save(self, *args, **kwargs):
+        self.is_grouping = True
+        super().save(*args, **kwargs)
 
-# === 4. ПРОКСИ: РЕБЁНОК (Альбом с фото) ===
+
+# === 4. ПРОКСИ: РЕБЁНОК (Уровень 3 - Конечный) ===
 class ChildAlbum(GroupingAlbum):
     class Meta:
         proxy = True
@@ -66,23 +78,24 @@ class ChildAlbum(GroupingAlbum):
         verbose_name_plural = "3. Дети (Альбомы)"
     
     def save(self, *args, **kwargs):
-        self.is_grouping = False # Это конечный альбом, в нем лежат фото
+        self.is_grouping = False # Это конечный альбом с фото
         super().save(*args, **kwargs)
 
-# === 5. СЛУЖЕБНАЯ ПРОКСИ (Для совместимости) ===
+
+# === 5. СЛУЖЕБНАЯ МОДЕЛЬ (Для совместимости) ===
 class Album(GroupingAlbum):
     class Meta:
         proxy = True
-        verbose_name = "Все объекты (Служебное)"
-        verbose_name_plural = "Все объекты (Служебное)"
-# Для совместимости со старыми ссылками
-PhotoAlbum = ChildAlbum 
+        verbose_name = "Все объекты"
+        verbose_name_plural = "Все объекты"
+# Алиас для старого кода
+PhotoAlbum = ChildAlbum
 
 
 # === 6. МОДЕЛЬ ФОТОГРАФИИ ===
 class Photo(models.Model):
     album = models.ForeignKey(
-        'ChildAlbum', # Ссылаемся на ребенка
+        'ChildAlbum',
         related_name='photos',
         on_delete=models.CASCADE,
         verbose_name="Ребёнок",
@@ -108,18 +121,15 @@ class Photo(models.Model):
         return f"Фото #{self.id}"
 
     def save(self, *args, **kwargs):
-        if self.image:
-            if not self.processed_image:
-                self.create_watermarked_thumbnail()
+        if self.image and not self.processed_image:
+            self.create_watermarked_thumbnail()
         super().save(*args, **kwargs)
 
     def create_watermarked_thumbnail(self):
         try:
             img = Image.open(self.image)
             img = ImageOps.exif_transpose(img) 
-
-            if img.mode != 'RGB':
-                img = img.convert('RGB')
+            if img.mode != 'RGB': img = img.convert('RGB')
 
             # Ресайз
             max_size = 1500
@@ -153,7 +163,6 @@ class Photo(models.Model):
                     x += text_w + padding_x
                 y += text_h + padding_y
 
-            # Крест
             draw.line((0, 0) + img.size, fill=(255, 255, 255, 50), width=2)
             draw.line((0, height) + (width, 0), fill=(255, 255, 255, 50), width=2)
 
@@ -164,11 +173,6 @@ class Photo(models.Model):
             watermarked.save(thumb_io, format='JPEG', quality=95, subsampling=0)
 
             file_name = os.path.basename(self.image.name)
-            self.processed_image.save(
-                f"watermarked_{file_name}",
-                ContentFile(thumb_io.getvalue()),
-                save=False
-            )
+            self.processed_image.save(f"watermarked_{file_name}", ContentFile(thumb_io.getvalue()), save=False)
         except Exception as e:
-            print(f"Ошибка обработки фото {self.id}: {e}")
-            pass
+            print(f"Ошибка обработки фото: {e}")
