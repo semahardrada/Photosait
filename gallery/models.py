@@ -5,11 +5,10 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 import os
 
-# === 1. ГЛАВНАЯ СТРАНИЦА (ОБЩАЯ ТАБЛИЦА) ===
+# === 1. БАЗОВАЯ МОДЕЛЬ (ОБЩАЯ) ===
 class GroupingAlbum(models.Model):
     title = models.CharField(max_length=200, verbose_name="Название")
     
-    # Родительская папка (может быть null для Садика)
     parent = models.ForeignKey(
         'self', 
         on_delete=models.CASCADE, 
@@ -24,12 +23,11 @@ class GroupingAlbum(models.Model):
     
     access_token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Access Token")
     
-    # True = Папка (Садик/Группа), False = Альбом (Ребенок)
     is_grouping = models.BooleanField(default=True, editable=False)
     
     expires_at = models.DateTimeField(blank=True, null=True, verbose_name="Срок действия доступа")
 
-    # ВЕРНУЛ ФИКСИРОВАННУЮ ЦЕНУ ПО УМОЛЧАНИЮ
+    # ИСПРАВЛЕНИЕ: Фиксированная цена 2500 по умолчанию
     full_set_price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -41,8 +39,8 @@ class GroupingAlbum(models.Model):
         return self.title
     
     class Meta:
-        verbose_name = "Объект галереи"
-        verbose_name_plural = "Объекты галереи"
+        verbose_name = "Папка (Общая)"
+        verbose_name_plural = "Папки (Общие)"
 
 
 # === 2. ПРОКСИ: САДИК (Уровень 1) ===
@@ -54,7 +52,7 @@ class Kindergarten(GroupingAlbum):
     
     def save(self, *args, **kwargs):
         self.is_grouping = True
-        self.parent = None # У садика нет родителя
+        self.parent = None 
         super().save(*args, **kwargs)
 
 
@@ -70,7 +68,7 @@ class Group(GroupingAlbum):
         super().save(*args, **kwargs)
 
 
-# === 4. ПРОКСИ: РЕБЁНОК (Уровень 3 - Конечный) ===
+# === 4. ПРОКСИ: РЕБЁНОК (Уровень 3) ===
 class ChildAlbum(GroupingAlbum):
     class Meta:
         proxy = True
@@ -78,21 +76,20 @@ class ChildAlbum(GroupingAlbum):
         verbose_name_plural = "3. Дети (Альбомы)"
     
     def save(self, *args, **kwargs):
-        self.is_grouping = False # Это конечный альбом с фото
+        self.is_grouping = False
         super().save(*args, **kwargs)
 
 
-# === 5. СЛУЖЕБНАЯ МОДЕЛЬ (Для совместимости) ===
+# === 5. СЛУЖЕБНАЯ ===
 class Album(GroupingAlbum):
     class Meta:
         proxy = True
         verbose_name = "Все объекты"
         verbose_name_plural = "Все объекты"
-# Алиас для старого кода
-PhotoAlbum = ChildAlbum
+PhotoAlbum = ChildAlbum 
 
 
-# === 6. МОДЕЛЬ ФОТОГРАФИИ ===
+# === 6. ФОТОГРАФИЯ ===
 class Photo(models.Model):
     album = models.ForeignKey(
         'ChildAlbum',
@@ -131,14 +128,13 @@ class Photo(models.Model):
             img = ImageOps.exif_transpose(img) 
             if img.mode != 'RGB': img = img.convert('RGB')
 
-            # Ресайз
+            # Увеличил качество и размер
             max_size = 1500
             ratio = min(max_size / img.width, max_size / img.height)
             if ratio < 1:
                 new_size = (int(img.width * ratio), int(img.height * ratio))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
 
-            # Водяной знак
             overlay = Image.new('RGBA', img.size, (255, 255, 255, 0))
             draw = ImageDraw.Draw(overlay)
             width, height = img.size

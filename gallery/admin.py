@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.urls import path, reverse
 from django.utils.html import format_html
-from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 
 from .models import Photo, GroupingAlbum, Kindergarten, Group, ChildAlbum
 from .forms import MultiplePhotoUploadForm
@@ -28,19 +28,14 @@ class BaseAlbumAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" style="max-height: 200px; border-radius: 5px;">', obj.cover_image.url)
         return "Нет обложки"
 
-    # БЕЗОПАСНАЯ ССЫЛКА НА РОДИТЕЛЯ (Чтобы не было ошибок NoReverseMatch)
     @admin.display(description="Где находится")
     def parent_link_safe(self, obj):
         if not obj.parent:
             return "🏠 Корень"
         try:
-            # Пытаемся определить тип родителя
-            # Если родитель - Садик (нет родителя), ссылка на Kindergarten
-            if obj.parent.parent is None:
-                url = reverse("admin:gallery_kindergarten_change", args=[obj.parent.id])
-            else:
-                # Иначе ссылка на Group
-                url = reverse("admin:gallery_group_change", args=[obj.parent.id])
+            url = reverse("admin:gallery_group_change", args=[obj.parent.id])
+            if obj.parent.parent is None: # Если родитель - Садик
+                 url = reverse("admin:gallery_kindergarten_change", args=[obj.parent.id])
             return format_html('<a href="{}">📂 {}</a>', url, obj.parent.title)
         except:
             return f"📂 {obj.parent.title}"
@@ -49,12 +44,51 @@ class BaseAlbumAdmin(admin.ModelAdmin):
         js = ('js/admin_copy_link.js',)
 
 
+# === INLINE: ГРУППЫ (Внутри Садика) ===
+class GroupInline(admin.TabularInline):
+    model = Group
+    fk_name = 'parent'
+    extra = 1
+    fields = ('title', 'cover_image')
+    show_change_link = True
+    verbose_name = "Группа"
+    verbose_name_plural = "Группы (Быстрое создание)"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_grouping=True)
+
+
+# === INLINE: ДЕТИ (Внутри Группы) ===
+class ChildAlbumInline(admin.TabularInline):
+    model = ChildAlbum
+    fk_name = 'parent'
+    extra = 1
+    fields = ('title', 'cover_image', 'go_to_album')
+    readonly_fields = ('go_to_album',)
+    show_change_link = True
+    verbose_name = "Ребёнок"
+    verbose_name_plural = "Дети (Быстрое создание)"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_grouping=False)
+
+    @admin.display(description="Действия")
+    def go_to_album(self, obj):
+        if obj.id:
+             url = reverse("admin:gallery_childalbum_change", args=[obj.id])
+             return format_html('<a href="{}" class="button" style="padding:3px 8px;">Редактировать</a>', url)
+        return "-"
+
+
 # === 1. САДИКИ ===
 @admin.register(Kindergarten)
 class KindergartenAdmin(BaseAlbumAdmin):
     list_display = ('title', 'cover_thumbnail', 'copy_link_button', 'created_at')
     exclude = ('parent', 'is_grouping', 'full_set_price', 'expires_at') 
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('copy_link_button_large',)
+    
+    # ВОССТАНОВЛЕНО: Можно создавать группы прямо внутри садика
+    inlines = [GroupInline]
 
     def get_queryset(self, request):
         return super().get_queryset(request).filter(is_grouping=True, parent__isnull=True)
@@ -79,12 +113,14 @@ class KindergartenAdmin(BaseAlbumAdmin):
 @admin.register(Group)
 class GroupAdmin(BaseAlbumAdmin):
     list_display = ('title', 'cover_thumbnail', 'parent_link_safe', 'copy_link_button', 'created_at')
-    list_filter = ('parent',)
+    list_filter = ('parent',) 
     exclude = ('is_grouping', 'full_set_price')
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('copy_link_button_large',)
+    
+    # ВОССТАНОВЛЕНО: Можно создавать детей прямо внутри группы
+    inlines = [ChildAlbumInline]
 
     def get_queryset(self, request):
-        # Группы - это папки, у которых есть родитель
         return super().get_queryset(request).filter(is_grouping=True, parent__isnull=False)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
@@ -108,7 +144,7 @@ class GroupAdmin(BaseAlbumAdmin):
         super().save_model(request, obj, form, change)
 
 
-# === 3. ДЕТИ (АЛЬБОМЫ) ===
+# === 3. ДЕТИ ===
 @admin.register(ChildAlbum)
 class ChildAlbumAdmin(BaseAlbumAdmin):
     list_display = ('title', 'cover_thumbnail', 'parent_link_safe', 'photo_count', 'upload_action', 'created_at')
@@ -137,7 +173,6 @@ class ChildAlbumAdmin(BaseAlbumAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "parent":
-            # Родителем ребенка может быть только Группа (Папка с родителем)
             kwargs["queryset"] = Group.objects.filter(is_grouping=True, parent__isnull=False)
             kwargs["label"] = "Группа"
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
@@ -203,7 +238,6 @@ class PhotoAdmin(admin.ModelAdmin):
                 
                 self.message_user(request, f'Успешно загружено {count} фото для "{album.title}".', messages.SUCCESS)
                 return HttpResponseRedirect(reverse('admin:gallery_childalbum_change', args=[album.id]))
-                
         else:
             form = MultiplePhotoUploadForm(initial=initial_data)
         

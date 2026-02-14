@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- ОФЕРТА (без изменений) -->
+<!-- === МОДАЛЬНОЕ ОКНО ОФЕРТЫ === -->
 {% if album %}
 <div id="oferta-backdrop" class="hidden fixed inset-0 z-40 bg-black bg-opacity-75"></div>
 <div id="oferta-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -82,8 +82,16 @@
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="w-full md:w-1/3 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100" style="min-height: 250px;">
                         {% if item.photo_obj.processed_image %}
+                            <!-- ИСПРАВЛЕННАЯ ЛУПА -->
                             <div class="relative group cursor-pointer" onclick="openLightbox('{{ item.photo_obj.processed_image.url }}')">
                                 <img src="{{ item.photo_obj.processed_image.url }}" alt="Фото {{ item.photo_obj.id }}" loading="lazy" class="max-h-64 w-auto max-w-full object-contain shadow-sm rounded group-hover:opacity-90 transition-opacity">
+                                <div class="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div class="bg-black bg-opacity-60 text-white p-3 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
                         {% endif %}
                     </div>
@@ -93,7 +101,13 @@
                             {% for f_item in item.formats %}
                             <div class="format-row grid grid-cols-12 gap-2 items-center" data-format-id="{{ f_item.format_obj.id }}" data-price="{{ f_item.price|stringformat:'.2f' }}" data-is-collage="{{ f_item.format_obj.is_collage|yesno:'true,false' }}">
                                 <div class="col-span-6 sm:col-span-5">
-                                    <span class="font-medium text-gray-700 block text-sm sm:text-base">{{ f_item.format_obj.name }}</span>
+                                    <span class="font-medium text-gray-700 block text-sm sm:text-base">
+                                        {{ f_item.format_obj.name }}
+                                        <!-- ДОБАВЛЕНА ПОДСКАЗКА ДЛЯ КОЛЛАЖА -->
+                                        {% if f_item.format_obj.is_collage %}
+                                            <span class="text-xs text-blue-500 block leading-tight mt-0.5 font-normal">(Коллаж из 5-7 фото, оплата 1 раз)</span>
+                                        {% endif %}
+                                    </span>
                                     <span class="text-xs text-gray-500">{{ f_item.price|floatformat:0 }} руб.</span>
                                 </div>
                                 <div class="col-span-6 sm:col-span-4 flex justify-end sm:justify-center">
@@ -169,12 +183,58 @@
         </form>
     </div>
     {% endif %}
+
+    <!-- === БЛОК ИНФОРМАЦИИ О ПРОДУКЦИИ (ХОЛСТ) === -->
+    <div class="mt-16 bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-xl border border-amber-100 shadow-sm">
+        <h2 class="text-3xl font-serif text-amber-900 text-center mb-8 border-b border-amber-200 pb-4">Наша продукция: Премиум холсты</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <!-- Описание -->
+            <div class="space-y-4 text-amber-900">
+                <h3 class="text-xl font-bold">Воспоминания, достойные музея</h3>
+                <ul class="space-y-3 list-none">
+                    <li class="flex items-start">
+                        <span class="text-amber-500 mr-2 text-xl">★</span>
+                        <span><strong>Натуральный холст:</strong> Плотная текстура ткани придает фотографии объем и художественный вид.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-amber-500 mr-2 text-xl">★</span>
+                        <span><strong>Деревянный подрамник:</strong> Надежная основа из натурального дерева (сосна), которая держит форму годами.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-amber-500 mr-2 text-xl">★</span>
+                        <span><strong>Галерейная натяжка:</strong> Изображение продолжается на торцах, рама не требуется. Аккуратная работа мастера.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-amber-500 mr-2 text-xl">★</span>
+                        <span><strong>Защитное покрытие:</strong> Холст покрывается лаком для защиты от выцветания и пыли.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-amber-500 mr-2 text-xl">★</span>
+                        <span><strong>Фурнитура:</strong> Крепления («крокодил» или тросик) уже установлены — можно сразу вешать на стену.</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Место для картинки (можно вставить реальную, если есть) -->
+            <div class="bg-white p-4 rounded-lg shadow-md rotate-2 border border-amber-100 flex items-center justify-center h-64 text-amber-300">
+                <div class="text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span class="text-sm">Пример холста в интерьере</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// (JS КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ, КАК БЫЛ В ПРОШЛОМ РАБОЧЕМ ВАРИАНТЕ)
+// ... (ВЕСЬ JS КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ) ...
+// Скопируй сюда JS из предыдущей версии файла, он работает правильно.
 function openLightbox(imageUrl) {
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-image');
@@ -196,8 +256,6 @@ function closeLightbox() {
 document.addEventListener('keydown', function(event) { if (event.key === "Escape") closeLightbox(); });
 
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (Оставшийся JS код для корзины, таймера и оферты) ...
-    // Вставь сюда тот же JS, что был в прошлом успешном варианте файла cart.html
     const cartPageContainer = document.getElementById('cart-page-container');
     if (!cartPageContainer) return;
 
@@ -215,26 +273,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRFToken': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ 
-                    photo_id: photoId, 
-                    format_id: formatId,
-                    quantity: quantity 
-                })
+                body: JSON.stringify({ photo_id: photoId, format_id: formatId, quantity: quantity })
             });
             const data = await response.json();
-            if (data.status !== 'ok') {
-                console.error('Ошибка обновления корзины на сервере');
-            }
-        } catch (error) {
-            console.error('Error updating cart:', error);
-        }
+            if (data.status !== 'ok') console.error('Ошибка обновления корзины');
+        } catch (error) { console.error('Error updating cart:', error); }
     };
 
     const updateTotals = () => {
         let grandTotal = 0;
         let hasItems = false; 
         let chargedCollageFormats = new Set();
-        
         document.querySelectorAll('.cart-item-block').forEach(itemBlock => {
             if (itemBlock.dataset.photoId) {
                 itemBlock.querySelectorAll('.format-row').forEach(row => {
@@ -258,10 +307,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isNaN(price)) { grandTotal += price; hasItems = true; }
             }
         });
-
         const totalPriceEl = document.getElementById('total-price');
         if (totalPriceEl) totalPriceEl.textContent = grandTotal.toFixed(2);
-        
         if (checkoutButton) {
             if (!hasItems) {
                 checkoutButton.disabled = true;
@@ -273,15 +320,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 checkoutError.className = 'text-center mt-4 text-sm font-medium text-green-600';
             }
         }
-        
         const bonusMessage = document.getElementById('bonus-message');
         if (bonusMessage) {
             if (bonusThreshold > 0 && grandTotal >= bonusThreshold) {
-                bonusMessage.classList.remove('hidden');
-                bonusMessage.classList.add('flex');
+                bonusMessage.classList.remove('hidden'); bonusMessage.classList.add('flex');
             } else {
-                bonusMessage.classList.add('hidden');
-                bonusMessage.classList.remove('flex');
+                bonusMessage.classList.add('hidden'); bonusMessage.classList.remove('flex');
             }
         }
     };
