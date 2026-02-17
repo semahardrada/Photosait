@@ -33,11 +33,16 @@ class BaseAlbumAdmin(admin.ModelAdmin):
         if not obj.parent:
             return "🏠 Корень"
         try:
-            url = reverse("admin:gallery_group_change", args=[obj.parent.id])
-            if obj.parent.parent is None: # Если родитель - Садик
-                 url = reverse("admin:gallery_kindergarten_change", args=[obj.parent.id])
+            # Пытаемся определить тип родителя для правильной ссылки
+            if obj.parent.parent is None:
+                # Родитель - это Садик
+                url = reverse("admin:gallery_kindergarten_change", args=[obj.parent.id])
+            else:
+                # Родитель - это Группа
+                url = reverse("admin:gallery_group_change", args=[obj.parent.id])
+            
             return format_html('<a href="{}">📂 {}</a>', url, obj.parent.title)
-        except:
+        except Exception:
             return f"📂 {obj.parent.title}"
 
     class Media:
@@ -183,14 +188,17 @@ class PhotoAdmin(admin.ModelAdmin):
     list_filter = ('album',)
     list_per_page = 40
     
+    # Редирект на массовую загрузку при нажатии "Добавить фото"
     def add_view(self, request, form_url='', extra_context=None):
         url = reverse('admin:gallery_photo_upload_multiple')
         return HttpResponseRedirect(url)
 
     @admin.display(description="Ребёнок")
     def album_link(self, obj):
-        url = reverse("admin:gallery_childalbum_change", args=[obj.album.id])
-        return format_html('<a href="{}">{}</a>', url, obj.album.title)
+        if obj.album:
+            url = reverse("admin:gallery_childalbum_change", args=[obj.album.id])
+            return format_html('<a href="{}">{}</a>', url, obj.album.title)
+        return "—"
 
     @admin.display(description="Превью")
     def photo_thumbnail(self, obj):
@@ -198,7 +206,7 @@ class PhotoAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" height="60" style="border-radius: 3px;">', obj.processed_image.url)
         return "—"
 
-    # Убрал changelist_view, так как он мог вызывать ошибки с шаблонами
+    # Убрали changelist_view, чтобы избежать конфликтов шаблонов
     
     def get_urls(self):
         urls = super().get_urls()
