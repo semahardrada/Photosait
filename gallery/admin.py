@@ -44,7 +44,7 @@ class BaseAlbumAdmin(admin.ModelAdmin):
         js = ('js/admin_copy_link.js',)
 
 
-# === INLINE: ГРУППЫ (Внутри Садика) ===
+# === INLINE: ГРУППЫ ===
 class GroupInline(admin.TabularInline):
     model = Group
     fk_name = 'parent'
@@ -53,12 +53,11 @@ class GroupInline(admin.TabularInline):
     show_change_link = True
     verbose_name = "Группа"
     verbose_name_plural = "Группы (Быстрое создание)"
-
     def get_queryset(self, request):
         return super().get_queryset(request).filter(is_grouping=True)
 
 
-# === INLINE: ДЕТИ (Внутри Группы) ===
+# === INLINE: ДЕТИ ===
 class ChildAlbumInline(admin.TabularInline):
     model = ChildAlbum
     fk_name = 'parent'
@@ -68,7 +67,6 @@ class ChildAlbumInline(admin.TabularInline):
     show_change_link = True
     verbose_name = "Ребёнок"
     verbose_name_plural = "Дети (Быстрое создание)"
-
     def get_queryset(self, request):
         return super().get_queryset(request).filter(is_grouping=False)
 
@@ -86,8 +84,6 @@ class KindergartenAdmin(BaseAlbumAdmin):
     list_display = ('title', 'cover_thumbnail', 'copy_link_button', 'created_at')
     exclude = ('parent', 'is_grouping', 'full_set_price', 'expires_at') 
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('copy_link_button_large',)
-    
-    # ВОССТАНОВЛЕНО: Можно создавать группы прямо внутри садика
     inlines = [GroupInline]
 
     def get_queryset(self, request):
@@ -116,8 +112,6 @@ class GroupAdmin(BaseAlbumAdmin):
     list_filter = ('parent',) 
     exclude = ('is_grouping', 'full_set_price')
     readonly_fields = BaseAlbumAdmin.readonly_fields + ('copy_link_button_large',)
-    
-    # ВОССТАНОВЛЕНО: Можно создавать детей прямо внутри группы
     inlines = [ChildAlbumInline]
 
     def get_queryset(self, request):
@@ -204,11 +198,8 @@ class PhotoAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" height="60" style="border-radius: 3px;">', obj.processed_image.url)
         return "—"
 
-    def changelist_view(self, request, extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['template_name'] = 'admin/gallery/photo/change_list.html'
-        return super().changelist_view(request, extra_context=extra_context)
-
+    # Убрал changelist_view, так как он мог вызывать ошибки с шаблонами
+    
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
