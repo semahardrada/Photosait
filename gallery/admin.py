@@ -1,12 +1,35 @@
 from django.contrib import admin
 from django.urls import path, reverse
-from django.utils.html import format_html
+# Импортируем модуль html целиком для наложения патча
+from django.utils import html
+from django.utils.safestring import mark_safe
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 
 from .models import Photo, GroupingAlbum, Kindergarten, Group, ChildAlbum
 from .forms import MultiplePhotoUploadForm
+
+# === ИСПРАВЛЕНИЕ (HOTFIX) ДЛЯ JAZZMIN + DJANGO 6.0 ===
+# Сохраняем оригинальную функцию
+_original_format_html = html.format_html
+
+def patched_format_html(format_string, *args, **kwargs):
+    """
+    Патч для совместимости. Jazzmin вызывает format_html без аргументов в пагинации,
+    что вызывает TypeError в новых версиях Django.
+    Если аргументов нет, используем mark_safe.
+    """
+    if not args and not kwargs:
+        return mark_safe(format_string)
+    return _original_format_html(format_string, *args, **kwargs)
+
+# Подменяем функцию в модуле django.utils.html
+html.format_html = patched_format_html
+# Используем пропатченную версию в этом файле
+format_html = patched_format_html
+# ======================================================
+
 
 # === БАЗОВЫЙ КЛАСС ===
 class BaseAlbumAdmin(admin.ModelAdmin):
@@ -198,8 +221,6 @@ class PhotoAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" height="60" style="border-radius: 3px;">', obj.processed_image.url)
         return "—"
 
-    # Убрал changelist_view, так как он мог вызывать ошибки с шаблонами
-    
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
