@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from .models import Order, OrderItem, ProductFormat
-from gallery.models import Album, Photo, ChildAlbum
+from gallery.models import Photo, ChildAlbum
 import json
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal
@@ -23,26 +23,56 @@ class EmailThread(threading.Thread):
                 send_mail(f'Заказ #{self.order.id} принят', f'Сумма: {self.order.get_total_cost()} руб.', settings.DEFAULT_FROM_EMAIL, [self.order.email])
         except Exception: pass
 
+# === КОРЗИНА ===
 def cart_view(request):
     cart_data = request.session.get('cart', {})
+    
+    # 1. СНАЧАЛА ИЩЕМ АЛЬБОМ (Чтобы кнопка "Назад" работала всегда)
+    album = None
+    item_quantities = cart_data.get('item_quantities', {})
+    
+    # А) Пробуем достать альбом напрямую (если покупали полный сет)
+    if cart_data.get('album_id'):
+        try:
+            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
+        except ChildAlbum.DoesNotExist:
+            pass
+
+    # Б) Если альбома нет, но в корзине есть отдельные фото, достаем альбом из первой фотографии
+    if not album and item_quantities:
+        try:
+            first_key = list(item_quantities.keys())[0]
+            first_photo_id = first_key.split('_')[0]
+            photo = Photo.objects.select_related('album').get(pk=first_photo_id)
+            album = photo.album
+            
+            # Сохраняем найденный альбом в сессию корзины на будущее
+            if album:
+                cart_data['album_id'] = str(album.id)
+                request.session['cart'] = cart_data
+                request.session.modified = True
+        except Exception:
+            pass
+
     photo_ids = cart_data.get('photo_ids', [])
     buy_full_set = cart_data.get('buy_full_set', False)
+    
+    grand_total = Decimal('0.00')
+    bonus_threshold = Decimal('2500.00')
+    
+    context = {
+        'photos_with_formats': [],
+        'grand_total': grand_total,
+        'bonus_threshold': bonus_threshold,
+        'album': album,
+        'cart': cart_data
+    }
 
-    if not photo_ids and not buy_full_set:
-        return render(request, 'orders/cart.html', {'photos_with_formats': []})
-
-    album = None
-    if cart_data.get('album_id'):
-        # Используем ChildAlbum для поиска
-        try: album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
-        except ChildAlbum.DoesNotExist:
-             request.session.pop('cart', None)
-             return render(request, 'orders/cart.html', {'photos_with_formats': []})
+    if not photo_ids and not buy_full_set and not item_quantities:
+        return render(request, 'orders/cart.html', context)
     
     all_formats = ProductFormat.objects.all()
     photos_with_formats = []
-    grand_total = Decimal('0.00')
-    bonus_threshold = Decimal('2500.00') 
     
     if buy_full_set and album:
         photos_with_formats.append({
@@ -50,21 +80,19 @@ def cart_view(request):
             'photo_obj': {
                 'id': 'full_set', 
                 'name': f"Все фото '{album.title}'", 
-                # Проверка на наличие фото перед обращением к [0]
                 'image_url': album.photos.first().processed_image.url if album.photos.exists() else ''
             },
             'full_set_price': album.full_set_price
         })
         grand_total = album.full_set_price
     else:
-        item_quantities = cart_data.get('item_quantities', {})
-        valid_photo_ids = []
         charged_collage_format_ids = set()
-
-        # Фильтруем фото по ID из сессии
-        photos = Photo.objects.filter(id__in=photo_ids)
-        # Создаем словарь для быстрого доступа, чтобы сохранить порядок (если важно) или просто итерируем
         
+        # Если photo_ids пуст, но есть item_quantities, собираем ID фотографий вручную (защита от багов)
+        if not photo_ids and item_quantities:
+            photo_ids = list(set([k.split('_')[0] for k in item_quantities.keys()]))
+
+        photos = Photo.objects.filter(id__in=photo_ids)
         for photo in photos:
             try:
                 formats_list = []
@@ -72,30 +100,26 @@ def cart_view(request):
                     key = f"{photo.id}_{fmt.id}"
                     quantity = item_quantities.get(key, 0)
                     effective_price = fmt.price
+                    
                     if fmt.is_collage and quantity > 0:
                         if fmt.id in charged_collage_format_ids: effective_price = Decimal('0.00')
                         else: charged_collage_format_ids.add(fmt.id)
+                        
                     row_total = effective_price * quantity
                     formats_list.append({'format_obj': fmt, 'price': fmt.price, 'effective_price': effective_price, 'quantity': quantity, 'row_total': row_total})
                     grand_total += row_total
                 photos_with_formats.append({'is_full_set': False, 'photo_obj': photo, 'formats': formats_list})
-                valid_photo_ids.append(str(photo.id))
             except Exception: continue
         
-        # Если список валидных фото изменился, обновляем сессию
-        # if len(valid_photo_ids) < len(photo_ids): ... (можно опустить для скорости)
-
-    context = {'photos_with_formats': photos_with_formats, 'grand_total': grand_total, 'bonus_threshold': bonus_threshold, 'album': album, 'cart': cart_data}
+    context['photos_with_formats'] = photos_with_formats
+    context['grand_total'] = grand_total
+    
     return render(request, 'orders/cart.html', context)
-
-# ... (Остальные функции add_full_set, update, remove, create_order - используй из предыдущего ответа, они корректны) ...
-# ВАЖНО: Вставь сюда create_order_view и другие функции, которые я присылал ранее.
-# Они не менялись, главное - cart_view выше.
 
 @require_POST
 def add_full_set_to_cart_view(request, album_id):
     album = get_object_or_404(ChildAlbum, pk=album_id)
-    cart = {'album_id': album_id, 'buy_full_set': True, 'photo_ids': [], 'item_quantities': {}}
+    cart = {'album_id': str(album_id), 'buy_full_set': True, 'photo_ids': [], 'item_quantities': {}}
     request.session['cart'] = cart
     return redirect('orders:cart')
 
@@ -107,10 +131,22 @@ def update_cart_view(request):
         format_id = str(data.get('format_id'))
         quantity = int(data.get('quantity'))
         if quantity < 0: quantity = 0
+        
         cart = request.session.get('cart', {})
         if 'item_quantities' not in cart: cart['item_quantities'] = {}
+        
         key = f"{photo_id}_{format_id}"
         cart['item_quantities'][key] = quantity
+        
+        # Поддерживаем список photo_ids в актуальном состоянии
+        if 'photo_ids' not in cart:
+            cart['photo_ids'] = []
+            
+        # Если добавили фото и его нет в списке
+        if quantity > 0 and photo_id not in cart['photo_ids']:
+            cart['photo_ids'].append(photo_id)
+            
+        request.session['cart'] = cart
         request.session.modified = True
         return JsonResponse({'status': 'ok'})
     except: return HttpResponseBadRequest()
@@ -122,10 +158,17 @@ def remove_photo_from_cart_view(request):
         photo_id = str(data.get('photo_id'))
         cart = request.session.get('cart', {})
         if 'photo_ids' in cart:
-            # photo_ids может быть списком чисел или строк, приводим к строкам для удаления
             cart['photo_ids'] = [str(pid) for pid in cart['photo_ids']]
             if str(photo_id) in cart['photo_ids']:
                 cart['photo_ids'].remove(str(photo_id))
+        
+        # Также удаляем все форматы для этого фото
+        if 'item_quantities' in cart:
+            keys_to_remove = [k for k in cart['item_quantities'].keys() if k.startswith(f"{photo_id}_")]
+            for k in keys_to_remove:
+                del cart['item_quantities'][k]
+                
+        request.session['cart'] = cart
         request.session.modified = True
         return JsonResponse({'status': 'ok'})
     except: return HttpResponseBadRequest()
@@ -145,7 +188,10 @@ def create_order_view(request):
     
     album = None
     if cart_data.get('album_id'): 
-        album = get_object_or_404(ChildAlbum, pk=cart_data.get('album_id'))
+        try:
+            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
+        except ChildAlbum.DoesNotExist:
+            pass
     
     total_price = Decimal('0.00')
     bonus_threshold = Decimal('2500.00')
