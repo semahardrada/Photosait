@@ -26,27 +26,24 @@ class EmailThread(threading.Thread):
 # === КОРЗИНА ===
 def cart_view(request):
     cart_data = request.session.get('cart', {})
-    
-    # 1. СНАЧАЛА ИЩЕМ АЛЬБОМ (Чтобы кнопка "Назад" работала всегда)
-    album = None
     item_quantities = cart_data.get('item_quantities', {})
+    photo_ids = cart_data.get('photo_ids', [])
+    buy_full_set = cart_data.get('buy_full_set', False)
     
-    # А) Пробуем достать альбом напрямую (если покупали полный сет)
-    if cart_data.get('album_id'):
-        try:
-            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
-        except ChildAlbum.DoesNotExist:
-            pass
-
-    # Б) Если альбома нет, но в корзине есть отдельные фото, достаем альбом из первой фотографии
-    if not album and item_quantities:
+    # 1. СНАЧАЛА ИЩЕМ АЛЬБОМ (Чтобы кнопка "Назад" работала ВСЕГДА правильно)
+    album = None
+    
+    # ПРИОРИТЕТ 1: Ищем альбом по ФОТОГРАФИЯМ, которые СЕЙЧАС физически лежат в корзине.
+    # Это 100% гарантия, что мы вернемся к нужному ребенку, даже если сессия забаговала.
+    if item_quantities:
         try:
             first_key = list(item_quantities.keys())[0]
             first_photo_id = first_key.split('_')[0]
+            # Достаем фото и вместе с ним сразу тянем привязанный альбом
             photo = Photo.objects.select_related('album').get(pk=first_photo_id)
             album = photo.album
             
-            # Сохраняем найденный альбом в сессию корзины на будущее
+            # Принудительно перезаписываем правильный альбом в сессию
             if album:
                 cart_data['album_id'] = str(album.id)
                 request.session['cart'] = cart_data
@@ -54,9 +51,13 @@ def cart_view(request):
         except Exception:
             pass
 
-    photo_ids = cart_data.get('photo_ids', [])
-    buy_full_set = cart_data.get('buy_full_set', False)
-    
+    # ПРИОРИТЕТ 2: Если фото поштучно нет (например, куплен только "Полный комплект"), берем из памяти
+    if not album and cart_data.get('album_id'):
+        try:
+            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
+        except ChildAlbum.DoesNotExist:
+            pass
+
     grand_total = Decimal('0.00')
     bonus_threshold = Decimal('2500.00')
     
@@ -88,7 +89,7 @@ def cart_view(request):
     else:
         charged_collage_format_ids = set()
         
-        # Если photo_ids пуст, но есть item_quantities, собираем ID фотографий вручную (защита от багов)
+        # Защита от багов: если photo_ids пуст, но есть item_quantities
         if not photo_ids and item_quantities:
             photo_ids = list(set([k.split('_')[0] for k in item_quantities.keys()]))
 
@@ -138,11 +139,9 @@ def update_cart_view(request):
         key = f"{photo_id}_{format_id}"
         cart['item_quantities'][key] = quantity
         
-        # Поддерживаем список photo_ids в актуальном состоянии
         if 'photo_ids' not in cart:
             cart['photo_ids'] = []
             
-        # Если добавили фото и его нет в списке
         if quantity > 0 and photo_id not in cart['photo_ids']:
             cart['photo_ids'].append(photo_id)
             
@@ -162,7 +161,6 @@ def remove_photo_from_cart_view(request):
             if str(photo_id) in cart['photo_ids']:
                 cart['photo_ids'].remove(str(photo_id))
         
-        # Также удаляем все форматы для этого фото
         if 'item_quantities' in cart:
             keys_to_remove = [k for k in cart['item_quantities'].keys() if k.startswith(f"{photo_id}_")]
             for k in keys_to_remove:

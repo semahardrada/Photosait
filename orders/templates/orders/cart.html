@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- === МОДАЛЬНОЕ ОКНО ОФЕРТЫ === -->
+<!-- МОДАЛЬНОЕ ОКНО ОФЕРТЫ -->
 {% if album %}
 <div id="oferta-backdrop" class="hidden fixed inset-0 z-40 bg-black bg-opacity-75"></div>
 <div id="oferta-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -33,7 +33,7 @@
 </div>
 {% endif %}
 
-<!-- LIGHTBOX -->
+<!-- LIGHTBOX (ЛУПА ДЛЯ ФОТО И ОПИСАНИЙ ПРОДУКЦИИ) -->
 <div id="lightbox-modal" class="hidden fixed inset-0 z-[60] bg-black bg-opacity-90 flex items-center justify-center p-4 transition-opacity duration-300" onclick="closeLightbox()">
     <div class="relative max-w-full max-h-full">
         <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-4xl hover:text-gray-300 focus:outline-none">&times;</button>
@@ -42,24 +42,24 @@
 </div>
 
 <div class="max-w-5xl mx-auto bg-white p-4 md:p-8 rounded-lg shadow-lg" id="cart-page-container" data-bonus-threshold="{{ bonus_threshold|default:0 }}" {% if album %}data-album-id="{{ album.id }}"{% endif %}>
-    <div class="flex justify-between items-center mb-8 border-b pb-4">
+    
+    <div class="flex justify-between items-center mb-4 border-b pb-4">
         <h1 class="text-2xl md:text-4xl font-bold text-gray-800">Ваша корзина</h1>
-        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base">&larr; Вернуться к альбому</a>
+        <!-- ССЫЛКА НАЗАД РАБОТАЕТ ИДЕАЛЬНО -->
+        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base font-medium">&larr; Вернуться к альбому</a>
     </div>
 
-    {% if album and album.full_set_price and not cart.buy_full_set %}
-    <div class="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-100 shadow-sm text-center">
-        <h3 class="text-lg font-semibold text-blue-900 mb-2">Выгодное предложение!</h3>
-        <p class="text-blue-700 mb-4">Купите все фотографии из этого альбома разом со скидкой в электронном виде.</p>
-        <form action="{% url 'orders:add_full_set' album.id %}" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors shadow-md transform hover:-translate-y-0.5">
-                Купить все фото Online ({{ album.full_set_price|floatformat:0 }} руб.)
-            </button>
-        </form>
+    <!-- === НОВОЕ МЕНЮ ПРОДУКЦИИ ВМЕСТО СТАРОЙ ПЛАШКИ === -->
+    <div class="mb-8 flex flex-wrap gap-3">
+        <!-- ВАЖНО: Замените '/static/images/canvas_info.jpg' на реальный путь к вашей картинке с описанием холста -->
+        <button type="button" onclick="openLightbox('/static/images/canvas_info.jpg')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+            Что такое Холст? (Фото-описание)
+        </button>
+        <!-- Можете скопировать эту кнопку еще раз, если появится "Магнит" и т.д. -->
     </div>
-    {% endif %}
 
+    <!-- ТОВАРЫ В КОРЗИНЕ -->
     <div id="cart-items-container" class="space-y-8">
         {% for item in photos_with_formats %}
             {% if item.is_full_set %}
@@ -73,23 +73,21 @@
                  </div>
                  <div class="text-center md:text-left">
                      <p class="font-bold text-xl text-green-900">{{ item.photo_obj.name }}</p>
-                     <p class="text-green-700 mt-1">Полный доступ ко всем фотографиям в оригинальном качестве.</p>
+                     <p class="text-green-700 mt-1">Полный доступ ко всем фотографиям в оригинальном качестве в ЭЛЕКТРОННОМ ВИДЕ.</p>
                      <p class="font-bold text-2xl mt-2 text-gray-800">{{ item.full_set_price|floatformat:0 }} руб.</p>
                  </div>
             </div>
             {% else %}
+            <!-- БЛОК С ФОТО -->
             <div class="cart-item-block mb-8 pb-8 border-b border-gray-100 last:border-0" data-photo-id="{{ item.photo_obj.id }}">
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="w-full md:w-1/3 bg-gray-50 rounded-lg flex items-center justify-center p-2 border border-gray-100" style="min-height: 250px;">
                         {% if item.photo_obj.processed_image %}
-                            <!-- ИСПРАВЛЕННАЯ ЛУПА -->
                             <div class="relative group cursor-pointer" onclick="openLightbox('{{ item.photo_obj.processed_image.url }}')">
                                 <img src="{{ item.photo_obj.processed_image.url }}" alt="Фото {{ item.photo_obj.id }}" loading="lazy" class="max-h-64 w-auto max-w-full object-contain shadow-sm rounded group-hover:opacity-90 transition-opacity">
                                 <div class="absolute inset-0 z-10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <div class="bg-black bg-opacity-60 text-white p-3 rounded-full">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
-                                        </svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                                     </div>
                                 </div>
                             </div>
@@ -103,7 +101,6 @@
                                 <div class="col-span-6 sm:col-span-5">
                                     <span class="font-medium text-gray-700 block text-sm sm:text-base">
                                         {{ f_item.format_obj.name }}
-                                        <!-- ДОБАВЛЕНА ПОДСКАЗКА ДЛЯ КОЛЛАЖА -->
                                         {% if f_item.format_obj.is_collage %}
                                             <span class="text-xs text-blue-500 block leading-tight mt-0.5 font-normal">(Коллаж из 5-7 фото, оплата 1 раз)</span>
                                         {% endif %}
@@ -113,9 +110,7 @@
                                 <div class="col-span-6 sm:col-span-4 flex justify-end sm:justify-center">
                                     {% if f_item.format_obj.is_collage %}
                                         <input type="hidden" value="{{ f_item.quantity }}" class="quantity-input">
-                                        <button type="button" class="collage-toggle-btn w-full py-1.5 px-2 rounded text-xs sm:text-sm font-bold transition-colors text-center border {% if f_item.quantity > 0 %}bg-blue-600 text-white border-blue-600 hover:bg-blue-700{% else %}bg-white text-gray-700 border-gray-300 hover:bg-gray-100{% endif %}">
-                                            {% if f_item.quantity > 0 %}В коллаже{% else %}Добавить{% endif %}
-                                        </button>
+                                        <button type="button" class="collage-toggle-btn w-full py-1.5 px-2 rounded text-xs sm:text-sm font-bold transition-colors text-center border {% if f_item.quantity > 0 %}bg-blue-600 text-white border-blue-600 hover:bg-blue-700{% else %}bg-white text-gray-700 border-gray-300 hover:bg-gray-100{% endif %}">{% if f_item.quantity > 0 %}В коллаже{% else %}Добавить{% endif %}</button>
                                     {% else %}
                                         <div class="flex items-center bg-white border border-gray-300 rounded-md">
                                             <button type="button" class="quantity-btn quantity-decrease w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-l-md transition">-</button>
@@ -142,8 +137,23 @@
         {% endfor %}
     </div>
 
+    <!-- === ПЛАШКА: ПОЛНЫЙ КОМПЛЕКТ ПЕРЕНЕСЕНА СЮДА ВНИЗ === -->
+    {% if album and album.full_set_price and not cart.buy_full_set %}
+    <div class="mt-10 mb-8 p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-md text-center transform transition-all hover:scale-[1.01]">
+        <h3 class="text-2xl font-bold text-blue-900 mb-3">🔥 Выгодное предложение!</h3>
+        <p class="text-blue-800 mb-6 text-lg">Получите <b>ВСЕ</b> фотографии из этого альбома разом со скидкой в ЭЛЕКТРОННОМ ВИДЕ.</p>
+        <form action="{% url 'orders:add_full_set' album.id %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="bg-green-600 text-white font-extrabold text-lg py-4 px-10 rounded-xl hover:bg-green-700 transition-colors shadow-lg">
+                Купить все фото Online за {{ album.full_set_price|floatformat:0 }} руб.
+            </button>
+        </form>
+    </div>
+    {% endif %}
+    <!-- === КОНЕЦ ПЛАШКИ === -->
+
     {% if photos_with_formats %}
-    <div id="checkout-form-container" class="border-t-2 border-gray-100 pt-8 mt-8">
+    <div id="checkout-form-container" class="border-t-2 border-gray-100 pt-8 mt-4">
         <div id="bonus-message" class="hidden p-4 mb-6 bg-green-100 border border-green-200 text-green-800 rounded-lg flex items-start">
             <svg class="w-6 h-6 mr-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <div><span class="font-bold">Бонус активирован!</span> Сумма заказа превышает {{ bonus_threshold|floatformat:0 }} руб. Вы получите комплект фото бесплатно.</div>
@@ -184,57 +194,11 @@
     </div>
     {% endif %}
 
-    <!-- === БЛОК ИНФОРМАЦИИ О ПРОДУКЦИИ (ХОЛСТ) === -->
-    <div class="mt-16 bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-xl border border-amber-100 shadow-sm">
-        <h2 class="text-3xl font-serif text-amber-900 text-center mb-8 border-b border-amber-200 pb-4">Наша продукция: Премиум холсты</h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <!-- Описание -->
-            <div class="space-y-4 text-amber-900">
-                <h3 class="text-xl font-bold">Воспоминания, достойные музея</h3>
-                <ul class="space-y-3 list-none">
-                    <li class="flex items-start">
-                        <span class="text-amber-500 mr-2 text-xl">★</span>
-                        <span><strong>Натуральный холст:</strong> Плотная текстура ткани придает фотографии объем и художественный вид.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="text-amber-500 mr-2 text-xl">★</span>
-                        <span><strong>Деревянный подрамник:</strong> Надежная основа из натурального дерева (сосна), которая держит форму годами.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="text-amber-500 mr-2 text-xl">★</span>
-                        <span><strong>Галерейная натяжка:</strong> Изображение продолжается на торцах, рама не требуется. Аккуратная работа мастера.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="text-amber-500 mr-2 text-xl">★</span>
-                        <span><strong>Защитное покрытие:</strong> Холст покрывается лаком для защиты от выцветания и пыли.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <span class="text-amber-500 mr-2 text-xl">★</span>
-                        <span><strong>Фурнитура:</strong> Крепления («крокодил» или тросик) уже установлены — можно сразу вешать на стену.</span>
-                    </li>
-                </ul>
-            </div>
-            
-            <!-- Место для картинки (можно вставить реальную, если есть) -->
-            <div class="bg-white p-4 rounded-lg shadow-md rotate-2 border border-amber-100 flex items-center justify-center h-64 text-amber-300">
-                <div class="text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-20 w-20 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-sm">Пример холста в интерьере</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// ... (ВЕСЬ JS КОД ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ) ...
-// Скопируй сюда JS из предыдущей версии файла, он работает правильно.
 function openLightbox(imageUrl) {
     const modal = document.getElementById('lightbox-modal');
     const img = document.getElementById('lightbox-image');
