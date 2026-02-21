@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Ваша корзина{% endblock %}
 
@@ -45,18 +46,19 @@
     
     <div class="flex justify-between items-center mb-4 border-b pb-4">
         <h1 class="text-2xl md:text-4xl font-bold text-gray-800">Ваша корзина</h1>
-        <!-- ССЫЛКА НАЗАД РАБОТАЕТ ИДЕАЛЬНО -->
-        <a href="{% if album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base font-medium">&larr; Вернуться к альбому</a>
+        
+        <!-- КНОПКА ВОЗВРАТА НАЗАД В ГРУППУ (РОДИТЕЛЮ) -->
+        <a href="{% if album and album.group %}{% url 'gallery:group_detail' album.group.access_token %}{% elif album %}{% url 'gallery:album_detail' album.access_token %}{% else %}/{% endif %}" class="text-blue-600 hover:underline text-sm md:text-base font-medium">
+            &larr; Вернуться в группу
+        </a>
     </div>
 
-    <!-- === НОВОЕ МЕНЮ ПРОДУКЦИИ ВМЕСТО СТАРОЙ ПЛАШКИ === -->
+    <!-- === МЕНЮ ПРОДУКЦИИ (РАБОТАЕТ ЧЕРЕЗ {% static %}) === -->
     <div class="mb-8 flex flex-wrap gap-3">
-        <!-- ВАЖНО: Замените '/static/images/canvas_info.jpg' на реальный путь к вашей картинке с описанием холста -->
-        <button type="button" onclick="openLightbox('/static/images/canvas_info.jpg')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
+        <button type="button" onclick="openLightbox('{% static 'images/canvas_info.jpg' %}')" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
             Что такое Холст? (Фото-описание)
         </button>
-        <!-- Можете скопировать эту кнопку еще раз, если появится "Магнит" и т.д. -->
     </div>
 
     <!-- ТОВАРЫ В КОРЗИНЕ -->
@@ -137,7 +139,7 @@
         {% endfor %}
     </div>
 
-    <!-- === ПЛАШКА: ПОЛНЫЙ КОМПЛЕКТ ПЕРЕНЕСЕНА СЮДА ВНИЗ === -->
+    <!-- === ПЛАШКА: ПОЛНЫЙ КОМПЛЕКТ ВНИЗУ === -->
     {% if album and album.full_set_price and not cart.buy_full_set %}
     <div class="mt-10 mb-8 p-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-200 shadow-md text-center transform transition-all hover:scale-[1.01]">
         <h3 class="text-2xl font-bold text-blue-900 mb-3">🔥 Выгодное предложение!</h3>
@@ -150,7 +152,6 @@
         </form>
     </div>
     {% endif %}
-    <!-- === КОНЕЦ ПЛАШКИ === -->
 
     {% if photos_with_formats %}
     <div id="checkout-form-container" class="border-t-2 border-gray-100 pt-8 mt-4">
