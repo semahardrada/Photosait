@@ -3,8 +3,9 @@
 {% block title %}{{ page_title|default:"Галерея" }}{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto py-8">
+<div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
     
+    <!-- НАВИГАЦИЯ -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ album.title }}</h1>
         {% if album.parent %}
@@ -21,91 +22,83 @@
         <p class="text-gray-600 mb-4">
             Оформить заказ можно не позднее: <span class="font-bold">{{ album.expires_at|date:"d.m.Y H:i" }}</span>.
         </p>
-        
-        <div class="text-sm text-gray-500 mb-1">до конца сессии осталось:</div>
-        
-        <!-- ВАЖНО: Передаем дату в ISO формате (c) для JS -->
-        <div id="countdown-timer" 
-             data-expires="{{ album.expires_at|date:'c' }}" 
-             class="text-4xl md:text-5xl font-mono font-bold text-red-600 tracking-wider">
-             --:--:--:--
+        <div id="countdown-timer" data-expires="{{ album.expires_at|date:'c' }}" class="text-4xl font-black text-red-600 tracking-widest font-mono">
+            -- -- -- --
         </div>
-        <div class="text-xs text-gray-400 mt-2 flex justify-center gap-4 md:gap-8">
-            <span>ДНЕЙ</span><span>ЧАСОВ</span><span>МИНУТ</span><span>СЕКУНД</span>
-        </div>
-
-        <p class="text-xs text-red-500 mt-4">Пожалуйста, не откладывайте выбор фотографий на последний момент!</p>
-    </div>
-    {% elif is_expired %}
-    <div class="mb-8 p-6 bg-red-50 rounded-xl border border-red-200 text-center text-red-700">
-        {{ expired_message|safe }}
     </div>
     {% endif %}
 
-    <!-- Сетка альбомов -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {% for item in albums %}
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
-            <a href="{% url 'gallery:album_detail' item.access_token %}" class="block h-full">
-                <div class="aspect-w-4 aspect-h-3 bg-gray-100 relative overflow-hidden">
-                    {% if item.cover_image %}
-                        <img src="{{ item.cover_image.url }}" alt="{{ item.title }}" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500">
+    <!-- === ИЗМЕНЕНИЯ ЗДЕСЬ: СЕТКА В СТИЛЕ PINTEREST === -->
+    {% if album.sub_albums.all %}
+        <!-- CSS columns для создания Masonry макета -->
+        <div class="columns-2 md:columns-3 lg:columns-4 gap-4 sm:gap-6 space-y-4 sm:space-y-6">
+            {% for sub in album.sub_albums.all %}
+            <a href="{% url 'gallery:album_list' sub.access_token %}" class="block break-inside-avoid group cursor-pointer">
+                <div class="relative rounded-2xl overflow-hidden bg-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+                    
+                    {% if sub.cover_image %}
+                        <!-- w-full h-auto object-cover убирает белые рамки, подстраиваясь под пропорции -->
+                        <img src="{{ sub.cover_image.url }}" alt="Обложка" loading="lazy" class="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500 ease-in-out">
                     {% else %}
-                        <div class="flex items-center justify-center h-full text-gray-400">
-                            <span class="text-sm">Нет обложки</span>
+                        <!-- Заглушка, если обложки нет -->
+                        <div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-200 text-gray-400">
+                            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         </div>
                     {% endif %}
-                </div>
-                <div class="p-4">
-                    <h3 class="font-bold text-gray-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">{{ item.title }}</h3>
-                    <p class="text-sm text-gray-500">{{ item.created_at|date:"d.m.Y" }}</p>
+                    
+                    <!-- Затемнение при наведении для визуального отклика (Названия и даты УДАЛЕНЫ) -->
+                    <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-colors duration-300"></div>
                 </div>
             </a>
+            {% endfor %}
         </div>
-        {% empty %}
-        <div class="col-span-full text-center py-10 text-gray-500">
-            В этой папке пока нет альбомов.
+    {% else %}
+        <div class="text-center py-12 bg-gray-50 rounded-xl">
+            <p class="text-gray-500 text-lg">В этом разделе пока нет фотографий.</p>
         </div>
-        {% endfor %}
-    </div>
+    {% endif %}
+
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const timerEl = document.getElementById('countdown-timer');
-        if (!timerEl) return;
+document.addEventListener('DOMContentLoaded', function() {
+    const timerEl = document.getElementById('countdown-timer');
+    if (!timerEl) return;
 
-        // Получаем дату из атрибута data-expires (ISO формат)
-        const expiresStr = timerEl.dataset.expires;
-        const targetDate = new Date(expiresStr).getTime();
+    // Получаем дату из атрибута data-expires (ISO формат)
+    const expiresStr = timerEl.dataset.expires;
+    const targetDate = new Date(expiresStr).getTime();
 
-        function updateTimer() {
-            const now = new Date().getTime();
-            const distance = targetDate - now;
+    function updateTimer() {
+        const now = new Date().getTime();
+        const distance = targetDate - now;
 
-            if (distance < 0) {
-                timerEl.innerHTML = "00 00 00 00";
-                timerEl.classList.remove('text-red-600');
-                timerEl.classList.add('text-gray-400');
-                return;
-            }
-
-            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-            // Форматируем с нулями (05 вместо 5)
-            const d = days < 10 ? "0" + days : days;
-            const h = hours < 10 ? "0" + hours : hours;
-            const m = minutes < 10 ? "0" + minutes : minutes;
-            const s = seconds < 10 ? "0" + seconds : seconds;
-
-            timerEl.innerHTML = `${d} ${h} ${m} ${s}`;
+        if (distance < 0) {
+            timerEl.innerHTML = "00 00 00 00";
+            timerEl.classList.remove('text-red-600');
+            timerEl.classList.add('text-gray-400');
+            return;
         }
 
-        updateTimer(); // Запуск сразу
-        setInterval(updateTimer, 1000); // Обновление каждую секунду
-    });
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Форматируем с нулями (05 вместо 5)
+        const d = days < 10 ? "0" + days : days;
+        const h = hours < 10 ? "0" + hours : hours;
+        const m = minutes < 10 ? "0" + minutes : minutes;
+        const s = seconds < 10 ? "0" + seconds : seconds;
+
+        // Красивый вывод с подписями
+        timerEl.innerHTML = `${d} <span class="text-lg text-gray-500">дн</span> ${h} <span class="text-lg text-gray-500">ч</span> ${m} <span class="text-lg text-gray-500">м</span> ${s} <span class="text-lg text-gray-500">с</span>`;
+    }
+
+    updateTimer();
+    setInterval(updateTimer, 1000);
+});
 </script>
 {% endblock %}
