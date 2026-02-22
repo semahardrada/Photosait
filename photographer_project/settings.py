@@ -110,7 +110,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # Папка, где лежат статические файлы разработки
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+# STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # Папка, куда Django соберет ВСЕ статические файлы (включая админку) командой collectstatic
 # Именно эту папку будет раздавать Nginx
