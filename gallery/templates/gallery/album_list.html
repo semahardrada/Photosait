@@ -9,7 +9,7 @@
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ album.title }}</h1>
         {% if album.parent %}
-            <a href="{% url 'gallery:album_detail' album.parent.access_token %}" class="text-blue-600 hover:underline">&larr; Назад к {{ album.parent.title }}</a>
+            <a href="{% url 'gallery:album_list' album.parent.access_token %}" class="text-blue-600 hover:underline">&larr; Назад</a>
         {% else %}
             <a href="{% url 'gallery:landing' %}" class="text-blue-600 hover:underline">&larr; На главную</a>
         {% endif %}
@@ -28,34 +28,75 @@
     </div>
     {% endif %}
 
-    <!-- === СЕТКА КАРТОЧЕК (САДИКИ / ГРУППЫ / АЛЬБОМЫ) === -->
+    <!-- === УНИВЕРСАЛЬНАЯ СЕТКА КАРТОЧЕК === -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         
-        {% for item in albums %}
+        <!-- 1. ЕСЛИ ЭТО САДИКИ (ведут на album_list) -->
+        {% for item in kindergartens %}
         <a href="{% url 'gallery:album_list' item.access_token %}" class="block group h-full">
-            
-            <!-- РАМКА ВОКРУГ ФОТО (p-2 создает отступ, border создает линию обводки) -->
             <div class="bg-white rounded-xl border border-gray-300 p-2 shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all duration-300 h-full flex flex-col">
-                
                 {% if item.cover_image %}
-                    <!-- Вертикальное фото, занимающее всю ширину рамки -->
                     <img src="{{ item.cover_image.url }}" alt="Обложка" loading="lazy" class="w-full h-auto object-cover rounded-lg transform group-hover:scale-[1.02] transition-transform duration-300">
                 {% else %}
-                    <!-- Заглушка, если нет обложки -->
                     <div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 rounded-lg text-gray-400">
                         <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>
                 {% endif %}
-                
-                <!-- Блок с названием и датой полностью удален по ТЗ -->
-
             </div>
         </a>
-        {% empty %}
-        <div class="col-span-full text-center py-12 bg-gray-50 rounded-xl">
-            <p class="text-gray-500 text-lg">В этом разделе пока нет фотографий.</p>
-        </div>
         {% endfor %}
+
+        <!-- 2. ЕСЛИ ЭТО ГРУППЫ (ведут на album_list) -->
+        {% for item in groups %}
+        <a href="{% url 'gallery:album_list' item.access_token %}" class="block group h-full">
+            <div class="bg-white rounded-xl border border-gray-300 p-2 shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all duration-300 h-full flex flex-col">
+                {% if item.cover_image %}
+                    <img src="{{ item.cover_image.url }}" alt="Обложка" loading="lazy" class="w-full h-auto object-cover rounded-lg transform group-hover:scale-[1.02] transition-transform duration-300">
+                {% else %}
+                    <div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 rounded-lg text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+
+        <!-- 3. ЕСЛИ ЭТО АЛЬБОМЫ РЕБЕНКА (ИСПОЛЬЗУЕТСЯ album_detail - ИСПРАВЛЕНИЕ 500 ОШИБКИ) -->
+        {% for item in albums %}
+        <a href="{% url 'gallery:album_detail' item.access_token %}" class="block group h-full">
+            <div class="bg-white rounded-xl border border-gray-300 p-2 shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all duration-300 h-full flex flex-col">
+                {% if item.cover_image %}
+                    <img src="{{ item.cover_image.url }}" alt="Обложка" loading="lazy" class="w-full h-auto object-cover rounded-lg transform group-hover:scale-[1.02] transition-transform duration-300">
+                {% else %}
+                    <div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 rounded-lg text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+
+        <!-- Альтернативное имя переменной для альбомов -->
+        {% for item in child_albums %}
+        <a href="{% url 'gallery:album_detail' item.access_token %}" class="block group h-full">
+            <div class="bg-white rounded-xl border border-gray-300 p-2 shadow-sm group-hover:shadow-md group-hover:border-blue-400 transition-all duration-300 h-full flex flex-col">
+                {% if item.cover_image %}
+                    <img src="{{ item.cover_image.url }}" alt="Обложка" loading="lazy" class="w-full h-auto object-cover rounded-lg transform group-hover:scale-[1.02] transition-transform duration-300">
+                {% else %}
+                    <div class="w-full aspect-[3/4] flex items-center justify-center bg-gray-100 rounded-lg text-gray-400">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+
+        <!-- Сообщение, если ничего нет -->
+        {% if not kindergartens and not groups and not albums and not child_albums %}
+        <div class="col-span-full text-center py-12 bg-gray-50 rounded-xl">
+            <p class="text-gray-500 text-lg">Папок или альбомов пока нет.</p>
+        </div>
+        {% endif %}
 
     </div>
 
@@ -67,37 +108,25 @@
 document.addEventListener('DOMContentLoaded', function() {
     const timerEl = document.getElementById('countdown-timer');
     if (!timerEl) return;
-
-    // Получаем дату из атрибута data-expires (ISO формат)
     const expiresStr = timerEl.dataset.expires;
     const targetDate = new Date(expiresStr).getTime();
-
     function updateTimer() {
         const now = new Date().getTime();
         const distance = targetDate - now;
-
         if (distance < 0) {
             timerEl.innerHTML = "00 00 00 00";
-            timerEl.classList.remove('text-red-600');
-            timerEl.classList.add('text-gray-400');
             return;
         }
-
         const days = Math.floor(distance / (1000 * 60 * 60 * 24));
         const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-        // Форматируем с нулями (05 вместо 5)
         const d = days < 10 ? "0" + days : days;
         const h = hours < 10 ? "0" + hours : hours;
         const m = minutes < 10 ? "0" + minutes : minutes;
         const s = seconds < 10 ? "0" + seconds : seconds;
-
-        // Красивый вывод с подписями
         timerEl.innerHTML = `${d} <span class="text-lg text-gray-500">дн</span> ${h} <span class="text-lg text-gray-500">ч</span> ${m} <span class="text-lg text-gray-500">м</span> ${s} <span class="text-lg text-gray-500">с</span>`;
     }
-
     updateTimer();
     setInterval(updateTimer, 1000);
 });

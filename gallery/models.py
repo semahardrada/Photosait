@@ -159,8 +159,8 @@ class Photo(models.Model):
                     x += text_w + padding_x
                 y += text_h + padding_y
 
-            draw.line((0, 0) + img.size, fill=(255, 255, 255, 50), width=2)
-            draw.line((0, height) + (width, 0), fill=(255, 255, 255, 50), width=2)
+            # draw.line((0, 0) + img.size, fill=(255, 255, 255, 50), width=2)
+            # draw.line((0, height) + (width, 0), fill=(255, 255, 255, 50), width=2)
 
             watermarked = Image.alpha_composite(img.convert('RGBA'), overlay)
             watermarked = watermarked.convert('RGB')
