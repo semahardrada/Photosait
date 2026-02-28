@@ -31,7 +31,7 @@
     <!-- === СЕТКА КАРТОЧЕК (САДИКИ / ГРУППЫ / АЛЬБОМЫ) === -->
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
         
-        {% for item in sub_albums %}
+        {% for item in all_photo_ids %}
         <a href="{% url 'gallery:album_list' item.access_token %}" class="block group h-full">
             
             <!-- РАМКА ВОКРУГ ФОТО (p-2 создает отступ, border создает линию обводки) -->
