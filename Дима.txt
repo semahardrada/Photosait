@@ -30,3 +30,5 @@
             </button>
         </div>
     </div>
+
+    DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
