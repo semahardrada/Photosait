@@ -34,7 +34,7 @@
 <div id="cart-page-container" class="container mx-auto px-4 py-8" data-album-id="{{ album.id|default:'' }}">
     <h1 class="text-3xl font-bold mb-6">Оформление заказа</h1>
 
-    <!-- ПАНЕЛЬ ПОМОЩНИКОВ (4 РАБОЧИЕ КНОПКИ БЕЗ ОШИБКИ TEMPLATESYNTAXERROR) -->
+    <!-- ПАНЕЛЬ ПОМОЩНИКОВ -->
     <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8 flex flex-wrap gap-4 items-center justify-between">
         <span class="text-gray-700 font-medium w-full md:w-auto mb-2 md:mb-0">Не знаете что выбрать? Посмотрите примеры:</span>
         <div class="flex flex-wrap gap-3">
@@ -52,7 +52,6 @@
             </button>
         </div>
     </div>
-    <!-- /ПАНЕЛЬ ПОМОЩНИКОВ -->
 
     <!-- СПИСОК ТОВАРОВ В КОРЗИНЕ -->
     <div class="flex flex-col lg:flex-row gap-8">
@@ -113,7 +112,8 @@
                     <span>Сумма к оплате:</span>
                     <span><span id="cart-total-price">{{ total_price|default:"0" }}</span> руб.</span>
                 </div>
-                <form action="{% url 'orders:order_form' %}" method="POST" id="checkout-form">
+                <!-- ИСПРАВЛЕНИЕ: Прямой путь action вместо Django URL, чтобы не было NoReverseMatch -->
+                <form action="/order/checkout/" method="POST" id="checkout-form">
                     {% csrf_token %}
                     {% if album %}
                         <input type="hidden" name="album_id" value="{{ album.id }}">
@@ -147,7 +147,6 @@
 <!-- СКРИПТЫ -->
 <script src="{% static 'js/cart.js' %}"></script>
 <script>
-    // Функции модального окна
     function openUniversalInfoModal(title, imageSrc) {
         const modal = document.getElementById('universal-info-modal');
         const titleEl = document.getElementById('universal-modal-title');
@@ -156,7 +155,6 @@
 
         imageEl.classList.add('opacity-0');
         loaderEl.classList.remove('hidden');
-
         titleEl.textContent = title;
         imageEl.src = imageSrc;
 
@@ -171,19 +169,15 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Слушатели для 4 кнопок (БЕЗОПАСНЫЙ СПОСОБ ДЛЯ DJANGO)
         document.querySelectorAll('.info-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const title = this.getAttribute('data-title');
-                const imgSrc = this.getAttribute('data-img');
-                openUniversalInfoModal(title, imgSrc);
+                openUniversalInfoModal(this.getAttribute('data-title'), this.getAttribute('data-img'));
             });
         });
 
         const cartPageContainer = document.getElementById('cart-page-container');
         if (!cartPageContainer) return;
 
-        // Оферта
         const albumId = cartPageContainer.dataset.albumId;
         if (albumId) {
             const modal = document.getElementById('oferta-modal');
@@ -216,7 +210,6 @@
             }
         }
 
-        // Логика корзины (+/- и удаление)
         document.addEventListener('click', (e) => {
             const target = e.target;
             

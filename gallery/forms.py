@@ -1,5 +1,5 @@
 from django import forms
-from .models import Album, ChildAlbum
+from .models import GroupingAlbum
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -22,9 +22,9 @@ class MultipleFileField(forms.FileField):
 
 class MultiplePhotoUploadForm(forms.Form):
     # ИСПРАВЛЕНИЕ ОШИБКИ IntegrityError (FOREIGN KEY constraint failed)
-    # Используем ChildAlbum вместо базового Album, чтобы БД корректно создавала связи
+    # Используем GroupingAlbum, так как именно к нему привязана таблица Photo в SQLite
     album = forms.ModelChoiceField(
-        queryset=ChildAlbum.objects.all(),
+        queryset=GroupingAlbum.objects.filter(is_grouping=False),
         label="Выберите альбом для загрузки",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
