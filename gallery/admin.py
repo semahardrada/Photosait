@@ -264,4 +264,4 @@ class PhotoAdmin(admin.ModelAdmin):
            title="Загрузка фото ребенка"
         )
         from django.shortcuts import render # На всякий случай импортируем локально
-        return render(request, 'gallery/templates/admin/gallery/photo/upload_multiple.html', context)
+        return render(request, 'gallery/upload_multiple.html', context)
