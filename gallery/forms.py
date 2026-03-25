@@ -21,7 +21,7 @@ class MultipleFileField(forms.FileField):
         return result
 
 class MultiplePhotoUploadForm(forms.Form):
-    # ИСПРАВЛЕНИЕ: Мы жестко запрашиваем ChildAlbum для правильного отображения в UI
+    # Жестко запрашиваем ChildAlbum для правильного отображения в UI
     album = forms.ModelChoiceField(
         queryset=ChildAlbum.objects.all(),
         label="Выберите альбом для загрузки",
@@ -33,13 +33,6 @@ class MultiplePhotoUploadForm(forms.Form):
         required=True,
         widget=MultipleFileInput(attrs={'multiple': True})
     )
-
-    def clean_album(self):
-        album = self.cleaned_data.get('album')
-        if album:
-            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ОШИБКИ FK CONSTRAINT ===
-            # Конвертируем дочерний класс (ChildAlbum) в базовый (GroupingAlbum).
-            # Так как ForeignKey в модели Photo привязан к GroupingAlbum, 
-            # это полностью решает ошибку SQLite FOREIGN KEY constraint failed!
-            return GroupingAlbum.objects.get(id=album.id)
-        return album
+    
+    # Мы УДАЛИЛИ метод clean_album. Форма сама прекрасно вернет нужный объект,
+    # а проблему с базой данных мы решим прямо в admin.py!

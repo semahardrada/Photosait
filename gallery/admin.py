@@ -245,7 +245,11 @@ class PhotoAdmin(admin.ModelAdmin):
                 images = request.FILES.getlist('images')
                 count = 0
                 for image in images:
-                    Photo.objects.create(album=album, image=image)
+                    # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ===
+                    # Используем album_id=album.id вместо album=album.
+                    # Это обходит проверки инстансов Django при наследовании
+                    # и пишет напрямую сырой ID в базу данных.
+                    Photo.objects.create(album_id=album.id, image=image)
                     count += 1
                 
                 self.message_user(request, f'Успешно загружено {count} фото для "{album.title}".', messages.SUCCESS)
@@ -259,4 +263,5 @@ class PhotoAdmin(admin.ModelAdmin):
            opts=self.model._meta,
            title="Загрузка фото ребенка"
         )
-        return render(request, 'admin/gallery/photo/upload_multiple.html', context)
+        from django.shortcuts import render # На всякий случай импортируем локально
+        return render(request, 'upload_multiple.html', context)
