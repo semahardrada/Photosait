@@ -3,11 +3,11 @@ from django.urls import path, reverse
 # Импортируем модуль html целиком для наложения патча
 from django.utils import html
 from django.utils.safestring import mark_safe
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponsePermanentRedirect
 
-from .models import Photo, GroupingAlbum, Kindergarten, Group, ChildAlbum,Album
+from .models import Photo, GroupingAlbum, Kindergarten, Group, ChildAlbum
 from .forms import MultiplePhotoUploadForm
 
 # === ИСПРАВЛЕНИЕ (HOTFIX) ДЛЯ JAZZMIN + DJANGO 6.0 ===
@@ -228,49 +228,35 @@ class PhotoAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
-    # 1. ГЕНЕРАЦИЯ КНОПКИ (Если ты выводишь её в таблице или внутри readonly_fields)
-    def upload_photos_button(self, obj):
-        # Проверяем, что альбом уже существует в БД (у него есть id)
-        if obj and obj.id:
-            # Строго передаем obj.id, чтобы в URL попал правильный номер альбома!
-            return format_html(
-                '<a class="button" style="background-color: #417690; color: white; padding: 10px 15px; border-radius: 4px;" href="/admin/gallery/photo/upload-multiple/?album_id={}">Загрузить фотографии</a>',
-                obj.id
-            )
-        return "Сначала сохраните альбом"
-    upload_photos_button.short_description = 'Массовая загрузка'
-
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('upload-multiple/', self.admin_site.admin_view(self.upload_multiple_photos), name='gallery_album_upload_multiple'),
-        ]
-        return custom_urls + urls
-
-    # 2. ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ (Блокирует ошибку FOREIGN KEY constraint failed)
     def upload_multiple_photos(self, request):
-        album_id = request.GET.get('album_id')
-        
-        # === ГЛАВНОЕ ИСПРАВЛЕНИЕ ===
-        # Если альбома нет (например, передан ID=5 от другого товара), 
-        # Django выдаст аккуратную ошибку 404, а не сломает базу данных.
-        album = get_object_or_404(ChildAlbum, id=album_id)
+        initial_data = {}
+        preselected_album_id = request.GET.get('album_id')
+        if preselected_album_id:
+            try:
+                album = ChildAlbum.objects.get(id=preselected_album_id)
+                initial_data['album'] = album
+            except ChildAlbum.DoesNotExist:
+                pass
 
         if request.method == 'POST':
-            images = request.FILES.getlist('images') # Имя инпута должно быть 'images'
-            
-            # Сохраняем фото, теперь 100% с правильным album
-            for image in images:
-                Photo.objects.create(album=album, image=image)
-            
-            self.message_user(request, f"Успешно загружено {len(images)} фото в альбом «{album.title}».", messages.SUCCESS)
-            
-            # Возвращаем пользователя обратно на страницу альбома
-            return redirect('admin:gallery_album_change', album.id)
-            
-        # Рендерим шаблон с формой загрузки
+            form = MultiplePhotoUploadForm(request.POST, request.FILES)
+            if form.is_valid():
+                album = form.cleaned_data['album']
+                images = request.FILES.getlist('images')
+                count = 0
+                for image in images:
+                    Photo.objects.create(album=album, image=image)
+                    count += 1
+                
+                self.message_user(request, f'Успешно загружено {count} фото для "{album.title}".', messages.SUCCESS)
+                return HttpResponseRedirect(reverse('admin:gallery_childalbum_change', args=[album.id]))
+        else:
+            form = MultiplePhotoUploadForm(initial=initial_data)
+        
         context = dict(
-            self.admin_site.each_context(request),
-            album=album,
+           self.admin_site.each_context(request),
+           form=form,
+           opts=self.model._meta,
+           title="Загрузка фото ребенка"
         )
         return render(request, 'admin/gallery/photo/upload_multiple.html', context)
