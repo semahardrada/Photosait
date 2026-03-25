@@ -21,7 +21,8 @@ class MultipleFileField(forms.FileField):
         return result
 
 class MultiplePhotoUploadForm(forms.Form):
-    # ИСПРАВЛЕНИЕ: Жестко указываем ChildAlbum, чтобы SQLite не выдавал FOREIGN KEY constraint failed
+    # ИСПРАВЛЕНИЕ: Мы жестко запрашиваем ChildAlbum. 
+    # Это решит ошибку FOREIGN KEY constraint failed при загрузке фото!
     album = forms.ModelChoiceField(
         queryset=ChildAlbum.objects.all(),
         label="Выберите альбом для загрузки",
