@@ -254,7 +254,7 @@ class PhotoAdmin(admin.ModelAdmin):
         # === ГЛАВНОЕ ИСПРАВЛЕНИЕ ===
         # Если альбома нет (например, передан ID=5 от другого товара), 
         # Django выдаст аккуратную ошибку 404, а не сломает базу данных.
-        album = get_object_or_404(Album, id=album_id)
+        album = get_object_or_404(ChildAlbum, id=album_id)
 
         if request.method == 'POST':
             images = request.FILES.getlist('images') # Имя инпута должно быть 'images'
