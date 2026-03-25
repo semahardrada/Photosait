@@ -1,5 +1,5 @@
 from django import forms
-from .models import ChildAlbum, GroupingAlbum
+from .models import ChildAlbum
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -21,7 +21,8 @@ class MultipleFileField(forms.FileField):
         return result
 
 class MultiplePhotoUploadForm(forms.Form):
-    # ИСПРАВЛЕНИЕ: Мы жестко запрашиваем ChildAlbum для правильного отображения в UI
+    # ИСПРАВЛЕНИЕ: Мы жестко запрашиваем ChildAlbum. 
+    # Это решит ошибку FOREIGN KEY constraint failed при загрузке фото!
     album = forms.ModelChoiceField(
         queryset=ChildAlbum.objects.all(),
         label="Выберите альбом для загрузки",
@@ -31,15 +32,5 @@ class MultiplePhotoUploadForm(forms.Form):
     images = MultipleFileField(
         label="Выберите фотографии (можно несколько)",
         required=True,
-        widget=MultipleFileInput(attrs={'multiple': True})
+        widget=MultipleFileInput(attrs={'multiple': True, 'class': 'form-control'})
     )
-
-    def clean_album(self):
-        album = self.cleaned_data.get('album')
-        if album:
-            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ ОШИБКИ FK CONSTRAINT ===
-            # Конвертируем дочерний класс (ChildAlbum) в базовый (GroupingAlbum).
-            # Так как ForeignKey в модели Photo привязан к GroupingAlbum, 
-            # это полностью решает ошибку SQLite FOREIGN KEY constraint failed!
-            return GroupingAlbum.objects.get(id=album.id)
-        return album
