@@ -55,19 +55,22 @@
 
     <!-- === МЕНЮ ПРОДУКЦИИ === -->
     <!-- 4 НОВЫЕ КНОПКИ-ПОМОЩНИКИ -->
-    <div class="mb-8 flex flex-wrap gap-3">
-        <button type="button" class="info-btn px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded shadow-sm hover:bg-gray-100 transition-colors" data-title="Что такое холст?" data-img="{% static 'images/canvas_info.jpg' %}">
-            Что такое холст?
-        </button>
-        <button type="button" class="info-btn px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded shadow-sm hover:bg-gray-100 transition-colors" data-title="Что такое магнит?" data-img="{% static 'images/info_magnet.jpg' %}">
-            Что такое магнит?
-        </button>
-        <button type="button" class="info-btn px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded shadow-sm hover:bg-gray-100 transition-colors" data-title="Что такое календарь?" data-img="{% static 'images/info_calendar.jpg' %}">
-            Что такое календарь?
-        </button>
-        <button type="button" class="info-btn px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded shadow-sm hover:bg-gray-100 transition-colors" data-title="Что такое коллаж?" data-img="{% static 'images/info_collage.jpg' %}">
-            Что такое коллаж?
-        </button>
+    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8 flex flex-wrap gap-4 items-center justify-between">
+        <span class="text-gray-700 font-medium w-full md:w-auto mb-2 md:mb-0">Не знаете что выбрать? Посмотрите примеры:</span>
+        <div class="flex flex-wrap gap-3">
+            <button type="button" class="info-btn px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-600 rounded shadow-sm hover:bg-blue-600 hover:text-white transition-colors" data-title="Что такое холст?" data-img="{% static 'images/canvas_info.jpg' %}">
+                🖼️ Холст
+            </button>
+            <button type="button" class="info-btn px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-600 rounded shadow-sm hover:bg-blue-600 hover:text-white transition-colors" data-title="Что такое магнит?" data-img="{% static 'images/info_magnet.jpg' %}">
+                🧲 Магнит
+            </button>
+            <button type="button" class="info-btn px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-600 rounded shadow-sm hover:bg-blue-600 hover:text-white transition-colors" data-title="Что такое календарь?" data-img="{% static 'images/info_calendar.jpg' %}">
+                📅 Календарь
+            </button>
+            <button type="button" class="info-btn px-3 py-1.5 text-sm bg-white border border-blue-300 text-blue-600 rounded shadow-sm hover:bg-blue-600 hover:text-white transition-colors" data-title="Что такое коллаж?" data-img="{% static 'images/info_collage.jpg' %}">
+                🧩 Коллаж
+            </button>
+        </div>
     </div>
     
     <!-- ТОВАРЫ В КОРЗИНЕ -->
