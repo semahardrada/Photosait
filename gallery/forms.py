@@ -1,5 +1,5 @@
 from django import forms
-from .models import ChildAlbum, GroupingAlbum
+from .models import Album
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -21,18 +21,17 @@ class MultipleFileField(forms.FileField):
         return result
 
 class MultiplePhotoUploadForm(forms.Form):
-    # Жестко запрашиваем ChildAlbum для правильного отображения в UI
+    # ИСПРАВЛЕНИЕ: Фильтруем список. 
+    # is_grouping=False гарантирует, что здесь будут ТОЛЬКО конечные альбомы (Дети).
+    # Садики и Группы (у которых is_grouping=True) сюда больше не попадут.
     album = forms.ModelChoiceField(
-        queryset=ChildAlbum.objects.all(),
+        queryset=Album.objects.filter(is_grouping=False),
         label="Выберите альбом для загрузки",
         widget=forms.Select(attrs={'class': 'form-control'})
     )
-    # Поле загрузки фото
+    
     images = MultipleFileField(
         label="Выберите фотографии (можно несколько)",
         required=True,
         widget=MultipleFileInput(attrs={'multiple': True})
     )
-    
-    # Мы УДАЛИЛИ метод clean_album. Форма сама прекрасно вернет нужный объект,
-    # а проблему с базой данных мы решим прямо в admin.py!
