@@ -18,12 +18,13 @@
 
     <!-- ТАЙМЕР -->
     {% if not is_expired and album.expires_at %}
-    <div class="mb-8 p-6 bg-white rounded-xl shadow-lg border border-blue-100 text-center max-w-2xl mx-auto">
-        <h3 class="text-xl font-bold text-gray-800 mb-2">Уважаемые родители!</h3>
-        <p class="text-gray-600 mb-4">
-            Оформить заказ можно не позднее: <span class="font-bold">{{ album.expires_at|date:"d.m.Y H:i" }}</span>.
+    <div class="mb-8 p-4 sm:p-6 bg-white rounded-xl shadow-lg border border-blue-100 text-center max-w-2xl mx-auto">
+        <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-2">Уважаемые родители!</h3>
+        <p class="text-sm sm:text-base text-gray-600 mb-4">
+            Оформить заказ можно не позднее: <span class="font-bold whitespace-nowrap">{{ album.expires_at|date:"d.m.Y H:i" }}</span>.
         </p>
-        <div id="countdown-timer" data-expires="{{ album.expires_at|date:'c' }}" class="text-4xl font-black text-red-600 tracking-widest font-mono">
+        <!-- Изменили размер текста и отступы, чтобы таймер влезал в 1 строку на мобильных -->
+        <div id="countdown-timer" data-expires="{{ album.expires_at|date:'c' }}" class="text-2xl sm:text-3xl md:text-4xl font-black text-red-600 font-mono whitespace-nowrap flex justify-center items-baseline">
             -- -- -- --
         </div>
     </div>
@@ -87,7 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const h = hours < 10 ? "0" + hours : hours;
         const m = minutes < 10 ? "0" + minutes : minutes;
         const s = seconds < 10 ? "0" + seconds : seconds;
-        timerEl.innerHTML = `${d} <span class="text-lg text-gray-500">дн</span> ${h} <span class="text-lg text-gray-500">ч</span> ${m} <span class="text-lg text-gray-500">м</span> ${s} <span class="text-lg text-gray-500">с</span>`;
+        // Измененный JS-код для таймера, чтобы не было переносов строк
+        timerEl.innerHTML = `${d}<span class="text-sm sm:text-lg text-gray-500 mx-1 sm:mx-2">дн</span>${h}<span class="text-sm sm:text-lg text-gray-500 mx-1 sm:mx-2">ч</span>${m}<span class="text-sm sm:text-lg text-gray-500 mx-1 sm:mx-2">м</span>${s}<span class="text-sm sm:text-lg text-gray-500 ml-1 sm:ml-2">с</span>`;
     }
     updateTimer();
     setInterval(updateTimer, 1000);
