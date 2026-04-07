@@ -17,11 +17,15 @@ class EmailThread(threading.Thread):
 
     def run(self):
         try:
+            # Высчитываем общую стоимость заказа для отправки на почту
+            total_cost = sum(item.get_cost() for item in self.order.items.all())
+            
             if settings.EMAIL_HOST_USER:
                 send_mail(f'💰 Заказ #{self.order.id}', f'Клиент: {self.order.get_full_name()}', settings.DEFAULT_FROM_EMAIL, [settings.EMAIL_HOST_USER])
             if self.order.email:
-                send_mail(f'Заказ #{self.order.id} принят', f'Сумма: {self.order.get_total_cost()} руб.', settings.DEFAULT_FROM_EMAIL, [self.order.email])
-        except Exception: pass
+                send_mail(f'Заказ #{self.order.id} принят', f'Сумма: {total_cost} руб.', settings.DEFAULT_FROM_EMAIL, [self.order.email])
+        except Exception: 
+            pass
 
 # === КОРЗИНА ===
 def cart_view(request):
@@ -177,11 +181,15 @@ def create_order_view(request):
     if not cart_data: return redirect('gallery:landing')
     
     full_name = request.POST.get('customer_name', 'Клиент').split()
+    
+    # === ИСПРАВЛЕНИЕ ОШИБКИ NOT NULL ===
+    # Если телефон или почту не ввели, мы передаем пустую строку `""` (через .strip()), 
+    # а не `None`. База данных SQLite спокойно принимает пустые строки!
     order = Order.objects.create(
         first_name=full_name[0] if full_name else 'Без имени',
         last_name=' '.join(full_name[1:]) if len(full_name) > 1 else '',
-        email=request.POST.get('customer_email') or None, 
-        phone=request.POST.get('customer_phone') or None,
+        email=request.POST.get('customer_email', '').strip(), 
+        phone=request.POST.get('customer_phone', '').strip(),
     )
     
     album = None

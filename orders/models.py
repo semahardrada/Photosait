@@ -30,9 +30,9 @@ class Order(models.Model):
     first_name = models.CharField(max_length=100, verbose_name="Имя клиента")
     last_name = models.CharField(max_length=100, verbose_name="Фамилия клиента", blank=True)
     
-    # === ИЗМЕНЕНИЕ: blank=True, null=True ===
-    email = models.EmailField(verbose_name="Email", blank=True, null=True)
-    phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True, null=True)
+    # === ИСПРАВЛЕНИЕ: Используем default="" вместо null=True ===
+    email = models.EmailField(verbose_name="Email", blank=True, default="")
+    phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True, default="")
     
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new', verbose_name="Статус")
