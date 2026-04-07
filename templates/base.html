@@ -20,7 +20,6 @@
                 
                 <!-- Логотип / Название (ссылка на главную) -->
                 <div class="flex items-center">
-                    <!-- ИСПРАВЛЕНИЕ: Ссылка ведет на 'gallery:landing' вместо старых ссылок -->
                     <a href="{% url 'gallery:landing' %}" class="flex-shrink-0 flex items-center text-blue-600 font-bold text-xl tracking-wide">
                         <i class="fas fa-camera-retro mr-2"></i>
                         PHOTO-STUDIO
@@ -28,24 +27,66 @@
                 </div>
 
                 <!-- Меню справа -->
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 sm:space-x-4">
                     
+                    <!-- Кнопка "Связь с нами" (Выпадающий список) -->
+                    <div class="relative group inline-block text-left">
+                        <button tabindex="0" class="text-gray-600 hover:text-blue-600 transition-colors p-2 flex items-center focus:outline-none cursor-pointer">
+                            <i class="fas fa-headset text-xl"></i>
+                            <span class="hidden md:inline ml-2 text-sm font-medium">Связь с нами</span>
+                        </button>
+                        
+                        <!-- Панель контактов (появляется при наведении или клике) -->
+                        <div class="absolute right-0 w-56 mt-2 origin-top-right bg-white border border-gray-100 divide-y divide-gray-100 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-300 z-50">
+                            <div class="px-4 py-3 bg-gray-50 rounded-t-lg">
+                                <p class="text-sm text-gray-900 font-bold">Наши контакты</p>
+                                <p class="text-xs text-gray-500">Отвечаем с 10:00 до 20:00</p>
+                            </div>
+                            <div class="py-1">
+                                <!-- Телефон -->
+                                <a href="tel:+79991234567" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                    <i class="fas fa-phone-alt w-5 text-gray-400"></i>
+                                    +7 (999) 123-45-67
+                                </a>
+                                <!-- WhatsApp -->
+                                <a href="https://wa.me/79991234567" target="_blank" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+                                    <i class="fab fa-whatsapp w-5 text-green-500 text-lg"></i>
+                                    WhatsApp
+                                </a>
+                                <!-- Telegram -->
+                                <a href="https://t.me/YourUsername" target="_blank" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors">
+                                    <i class="fab fa-telegram-plane w-5 text-blue-500 text-lg"></i>
+                                    Telegram
+                                </a>
+                            </div>
+                            <div class="py-1">
+                                <!-- Email -->
+                                <a href="mailto:info@photostudio.ru" class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-700 transition-colors rounded-b-lg">
+                                    <i class="far fa-envelope w-5 text-gray-400"></i>
+                                    Написать на почту
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Ссылка на корзину (показываем всегда) -->
-                    <a href="{% url 'orders:cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors p-2">
+                    <a href="{% url 'orders:cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors p-2 flex items-center">
                         <i class="fas fa-shopping-cart text-xl"></i>
                         {% if request.session.cart.photo_ids or request.session.cart.buy_full_set %}
-                            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">!</span>
+                            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full shadow-sm">!</span>
                         {% endif %}
                     </a>
 
                     <!-- Ссылка для Админа (если залогинен) -->
                     {% if user.is_staff %}
-                        <a href="{% url 'admin:index' %}" class="text-sm font-medium text-gray-500 hover:text-gray-900 ml-4 border border-gray-300 rounded px-3 py-1">
-                            <i class="fas fa-cog mr-1"></i> Админка
-                        </a>
-                        <a href="{% url 'gallery:album_list' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-2">
-                            <i class="fas fa-list mr-1"></i> Все папки
-                        </a>
+                        <div class="hidden sm:flex items-center border-l border-gray-200 pl-4 ml-2">
+                            <a href="{% url 'admin:index' %}" class="text-sm font-medium text-gray-500 hover:text-gray-900 border border-gray-300 rounded px-3 py-1 transition-colors">
+                                <i class="fas fa-cog mr-1"></i> Админка
+                            </a>
+                            <a href="{% url 'gallery:album_list' %}" class="text-sm font-medium text-blue-600 hover:text-blue-800 ml-3 transition-colors">
+                                <i class="fas fa-list mr-1"></i> Все папки
+                            </a>
+                        </div>
                     {% endif %}
                 </div>
             </div>
