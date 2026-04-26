@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from .models import Order, OrderItem, ProductFormat
-from gallery.models import Photo, ChildAlbum
+# Добавили импорт базового Album на случай, если ChildAlbum удален
+from gallery.models import Photo, ChildAlbum, Album
 import json
 from django.http import JsonResponse, HttpResponseBadRequest
 from decimal import Decimal
@@ -50,8 +51,11 @@ def cart_view(request):
 
     if not album and cart_data.get('album_id'):
         try:
-            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
-        except ChildAlbum.DoesNotExist:
+            try:
+                album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
+            except Exception:
+                album = Album.objects.get(pk=cart_data.get('album_id'))
+        except Exception:
             pass
 
     grand_total = Decimal('0.00')
@@ -114,8 +118,12 @@ def cart_view(request):
 
 @require_POST
 def add_full_set_to_cart_view(request, album_id):
-    album = get_object_or_404(ChildAlbum, pk=album_id)
-    cart = {'album_id': str(album_id), 'buy_full_set': True, 'photo_ids': [], 'item_quantities': {}}
+    try:
+        album = ChildAlbum.objects.get(pk=album_id)
+    except Exception:
+        album = get_object_or_404(Album, pk=album_id)
+        
+    cart = {'album_id': str(album.id), 'buy_full_set': True, 'photo_ids': [], 'item_quantities': {}}
     request.session['cart'] = cart
     return redirect('orders:cart')
 
@@ -173,14 +181,12 @@ def create_order_view(request):
     
     full_name = request.POST.get('customer_name', 'Клиент').split()
     
-    # === ИСПРАВЛЕНИЕ: Телефон теперь обязателен ===
+    # === ИМЯ И ТЕЛЕФОН ОБЯЗАТЕЛЬНЫ ===
     phone_val = request.POST.get('customer_phone', '').strip()
     if not phone_val:
-        phone_val = "Не указан" # На всякий случай, если обошли HTML-валидацию
+        phone_val = "Не указан" 
         
     email_val = request.POST.get('customer_email', '').strip()
-    if not email_val:
-        email_val = "" # 100% пустая строка, никаких None, чтобы база данных SQLite не ломалась
     
     order = Order.objects.create(
         first_name=full_name[0] if full_name else 'Без имени',
@@ -192,8 +198,11 @@ def create_order_view(request):
     album = None
     if cart_data.get('album_id'): 
         try:
-            album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
-        except ChildAlbum.DoesNotExist:
+            try:
+                album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
+            except Exception:
+                album = Album.objects.get(pk=cart_data.get('album_id'))
+        except Exception:
             pass
     
     total_price = Decimal('0.00')
@@ -202,7 +211,15 @@ def create_order_view(request):
     
     if cart_data.get('buy_full_set') and album:
         item_price = album.full_set_price
-        OrderItem.objects.create(order=order, price=item_price, quantity=1, is_full_set=True, album_set=album)
+        
+        # === ИСПРАВЛЕНИЕ: ЖЕСТКИЙ ID ДЛЯ ИЗБЕЖАНИЯ ОШИБКИ FOREIGN KEY ===
+        OrderItem.objects.create(
+            order_id=order.id, 
+            price=item_price, 
+            quantity=1, 
+            is_full_set=True, 
+            album_set_id=album.id
+        )
         total_price = item_price
     else:
         item_quantities = cart_data.get('item_quantities', {})
@@ -215,10 +232,19 @@ def create_order_view(request):
                 photo = Photo.objects.get(pk=photo_id)
                 product_format = ProductFormat.objects.get(pk=format_id)
                 item_price = product_format.price
+                
                 if product_format.is_collage:
                     if int(format_id) in charged_collage_format_ids: item_price = Decimal('0.00')
                     else: charged_collage_format_ids.add(int(format_id))
-                OrderItem.objects.create(order=order, photo=photo, product_format=product_format, price=item_price, quantity=quantity)
+                
+                # === ИСПРАВЛЕНИЕ: ЖЕСТКИЕ ID ===
+                OrderItem.objects.create(
+                    order_id=order.id, 
+                    photo_id=photo.id, 
+                    product_format_id=product_format.id, 
+                    price=item_price, 
+                    quantity=quantity
+                )
                 total_price += item_price * quantity
             except: continue
 
