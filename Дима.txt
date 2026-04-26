@@ -10,5 +10,3 @@
 #npx localtunnel --port 5000
 
     DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
-
-    1

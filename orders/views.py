@@ -17,11 +17,10 @@ class EmailThread(threading.Thread):
 
     def run(self):
         try:
-            # Высчитываем общую стоимость заказа для отправки на почту
             total_cost = sum(item.get_cost() for item in self.order.items.all())
             
             if settings.EMAIL_HOST_USER:
-                send_mail(f'💰 Заказ #{self.order.id}', f'Клиент: {self.order.get_full_name()}', settings.DEFAULT_FROM_EMAIL, [settings.EMAIL_HOST_USER])
+                send_mail(f'💰 Заказ #{self.order.id}', f'Клиент: {self.order.get_full_name()}\nТелефон: {self.order.phone}', settings.DEFAULT_FROM_EMAIL, [settings.EMAIL_HOST_USER])
             if self.order.email:
                 send_mail(f'Заказ #{self.order.id} принят', f'Сумма: {total_cost} руб.', settings.DEFAULT_FROM_EMAIL, [self.order.email])
         except Exception: 
@@ -34,20 +33,14 @@ def cart_view(request):
     photo_ids = cart_data.get('photo_ids', [])
     buy_full_set = cart_data.get('buy_full_set', False)
     
-    # 1. СНАЧАЛА ИЩЕМ АЛЬБОМ (Чтобы кнопка "Назад" работала ВСЕГДА правильно)
     album = None
     
-    # ПРИОРИТЕТ 1: Ищем альбом по ФОТОГРАФИЯМ, которые СЕЙЧАС физически лежат в корзине.
-    # Это 100% гарантия, что мы вернемся к нужному ребенку, даже если сессия забаговала.
     if item_quantities:
         try:
             first_key = list(item_quantities.keys())[0]
             first_photo_id = first_key.split('_')[0]
-            # Достаем фото и вместе с ним сразу тянем привязанный альбом
             photo = Photo.objects.select_related('album').get(pk=first_photo_id)
             album = photo.album
-            
-            # Принудительно перезаписываем правильный альбом в сессию
             if album:
                 cart_data['album_id'] = str(album.id)
                 request.session['cart'] = cart_data
@@ -55,7 +48,6 @@ def cart_view(request):
         except Exception:
             pass
 
-    # ПРИОРИТЕТ 2: Если фото поштучно нет (например, куплен только "Полный комплект"), берем из памяти
     if not album and cart_data.get('album_id'):
         try:
             album = ChildAlbum.objects.get(pk=cart_data.get('album_id'))
@@ -93,7 +85,6 @@ def cart_view(request):
     else:
         charged_collage_format_ids = set()
         
-        # Защита от багов: если photo_ids пуст, но есть item_quantities
         if not photo_ids and item_quantities:
             photo_ids = list(set([k.split('_')[0] for k in item_quantities.keys()]))
 
@@ -182,14 +173,20 @@ def create_order_view(request):
     
     full_name = request.POST.get('customer_name', 'Клиент').split()
     
-    # === ИСПРАВЛЕНИЕ ОШИБКИ NOT NULL ===
-    # Если телефон или почту не ввели, мы передаем пустую строку `""` (через .strip()), 
-    # а не `None`. База данных SQLite спокойно принимает пустые строки!
+    # === ИСПРАВЛЕНИЕ: Телефон теперь обязателен ===
+    phone_val = request.POST.get('customer_phone', '').strip()
+    if not phone_val:
+        phone_val = "Не указан" # На всякий случай, если обошли HTML-валидацию
+        
+    email_val = request.POST.get('customer_email', '').strip()
+    if not email_val:
+        email_val = "" # 100% пустая строка, никаких None, чтобы база данных SQLite не ломалась
+    
     order = Order.objects.create(
         first_name=full_name[0] if full_name else 'Без имени',
         last_name=' '.join(full_name[1:]) if len(full_name) > 1 else '',
-        email=request.POST.get('customer_email', '').strip(), 
-        phone=request.POST.get('customer_phone', '').strip(),
+        email=email_val, 
+        phone=phone_val,
     )
     
     album = None
